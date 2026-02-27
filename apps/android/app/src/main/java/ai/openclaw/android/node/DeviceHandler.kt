@@ -293,12 +293,15 @@ class DeviceHandler(
       BatteryManager.BATTERY_PLUGGED_AC -> "ac"
       BatteryManager.BATTERY_PLUGGED_USB -> "usb"
       BatteryManager.BATTERY_PLUGGED_WIRELESS -> "wireless"
-      BatteryManager.BATTERY_PLUGGED_DOCK -> "dock"
-      else -> "none"
+      else -> {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && plugged == BatteryManager.BATTERY_PLUGGED_DOCK) "dock"
+        else "none"
+      }
     }
   }
 
   private fun mapThermalState(powerManager: PowerManager?): String {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return "nominal"
     val thermal = powerManager?.currentThermalStatus ?: return "nominal"
     return when (thermal) {
       PowerManager.THERMAL_STATUS_NONE, PowerManager.THERMAL_STATUS_LIGHT -> "nominal"

@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
@@ -142,13 +143,18 @@ class NodeForegroundService : Service() {
     }
 
     lastRequiresMic = requiresMic
-    val types =
-      if (requiresMic) {
-        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-      } else {
-        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
-      }
-    startForeground(NOTIFICATION_ID, notification, types)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      val types =
+        if (requiresMic) {
+          ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        } else {
+          ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
+        }
+      startForeground(NOTIFICATION_ID, notification, types)
+    } else {
+      @Suppress("DEPRECATION")
+      startForeground(NOTIFICATION_ID, notification)
+    }
     didStartForeground = true
   }
 

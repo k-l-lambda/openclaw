@@ -163,8 +163,12 @@ class SmsManager(private val context: Context) {
         val params = (parseResult as ParseResult.Ok).params
 
         return try {
-            val smsManager = context.getSystemService(AndroidSmsManager::class.java)
-                ?: throw IllegalStateException("SMS_UNAVAILABLE: SmsManager not available")
+            val smsManager = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                context.getSystemService(AndroidSmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                AndroidSmsManager.getDefault()
+            } ?: throw IllegalStateException("SMS_UNAVAILABLE: SmsManager not available")
 
             val plan = buildSendPlan(params.message) { smsManager.divideMessage(it) }
             if (plan.useMultipart) {

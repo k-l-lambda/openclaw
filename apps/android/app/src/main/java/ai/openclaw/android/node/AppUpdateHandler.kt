@@ -262,9 +262,14 @@ class AppUpdateHandler(
           }
           // Commit with FLAG_MUTABLE PendingIntent — system requires mutable for PackageInstaller status
           val callbackIntent = android.content.Intent(appContext, InstallResultReceiver::class.java)
+          val mutableFlag = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            android.app.PendingIntent.FLAG_MUTABLE
+          } else {
+            0
+          }
           val pi = android.app.PendingIntent.getBroadcast(
             appContext, sessionId, callbackIntent,
-            android.app.PendingIntent.FLAG_UPDATE_CURRENT or android.app.PendingIntent.FLAG_MUTABLE
+            android.app.PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag
           )
           session.commit(pi.intentSender)
           android.util.Log.w("openclaw", "app.update: PackageInstaller session committed, waiting for user confirmation")
