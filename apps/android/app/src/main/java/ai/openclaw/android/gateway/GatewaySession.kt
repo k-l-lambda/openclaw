@@ -427,6 +427,32 @@ class GatewaySession(
         )
       val signature = identityStore.signPayload(payload, identity)
       val publicKey = identityStore.publicKeyBase64Url(identity)
+      // DEBUG: log payload, signature, and self-verification to file
+      try {
+        val selfVerify = if (signature != null) identityStore.verifySelfSignature(payload, signature, identity) else false
+        val debugFile = java.io.File("/data/data/ai.openclaw.android/files/debug_connect.txt")
+        debugFile.parentFile?.mkdirs()
+        debugFile.writeText(buildString {
+          appendLine("timestamp=${java.time.Instant.now()}")
+          appendLine("deviceId=${identity.deviceId}")
+          appendLine("publicKey=$publicKey")
+          appendLine("payload=$payload")
+          appendLine("signature=$signature")
+          appendLine("selfVerify=$selfVerify")
+          appendLine("signedAtMs=$signedAtMs")
+          appendLine("nonce=$connectNonce")
+          appendLine("role=${options.role}")
+          appendLine("scopes=${options.scopes}")
+          appendLine("clientId=${client.id}")
+          appendLine("clientMode=${client.mode}")
+          appendLine("platform=${client.platform}")
+          appendLine("deviceFamily=${client.deviceFamily}")
+          appendLine("authToken=${if (authToken.isEmpty()) "(empty)" else "(present:${authToken.length}chars)"}")
+        })
+        android.util.Log.wtf("DeviceAuth", "DEBUG: selfVerify=$selfVerify payload=$payload sig=$signature")
+      } catch (e: Throwable) {
+        android.util.Log.wtf("DeviceAuth", "DEBUG file write failed: ${e.message}")
+      }
       val deviceJson =
         if (!signature.isNullOrBlank() && !publicKey.isNullOrBlank()) {
           buildJsonObject {
