@@ -60,8 +60,8 @@ export function normalizeMessageChannel(raw?: string | null): string | undefined
   if (normalized === INTERNAL_MESSAGE_CHANNEL) {
     return INTERNAL_MESSAGE_CHANNEL;
   }
-  // Gateway client modes that use internal webchat delivery (not external channels)
-  if (normalized === "anthroid") {
+  // Gateway client modes / provider labels that use internal webchat delivery
+  if (normalized === "anthroid" || normalized === "kl") {
     return INTERNAL_MESSAGE_CHANNEL;
   }
   const builtIn = normalizeChatChannelId(normalized);
