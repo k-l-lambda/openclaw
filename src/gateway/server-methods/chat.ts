@@ -935,7 +935,9 @@ export const chatHandlers: GatewayRequestHandlers = {
         SessionKey: sessionKey,
         Provider: isFromAnthroidClient ? "KL" : INTERNAL_MESSAGE_CHANNEL,
         Surface: isFromAnthroidClient ? anthroidChannel : INTERNAL_MESSAGE_CHANNEL,
-        OriginatingChannel: originatingChannel,
+        // For anthroid clients, set OriginatingChannel explicitly so resolveInboundChannel()
+        // returns "anthroid" (it checks OriginatingChannel before Surface).
+        OriginatingChannel: isFromAnthroidClient ? anthroidChannel : originatingChannel,
         OriginatingTo: originatingTo,
         AccountId: accountId,
         MessageThreadId: messageThreadId,
