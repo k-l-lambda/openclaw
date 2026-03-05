@@ -935,9 +935,10 @@ export const chatHandlers: GatewayRequestHandlers = {
         SessionKey: sessionKey,
         Provider: isFromAnthroidClient ? "KL" : INTERNAL_MESSAGE_CHANNEL,
         Surface: isFromAnthroidClient ? anthroidChannel : INTERNAL_MESSAGE_CHANNEL,
-        // For anthroid clients, set OriginatingChannel explicitly so resolveInboundChannel()
-        // returns "anthroid" (it checks OriginatingChannel before Surface).
-        OriginatingChannel: isFromAnthroidClient ? anthroidChannel : originatingChannel,
+        // For anthroid clients, leave OriginatingChannel undefined so that:
+        //   1. resolveInboundChannel() falls through to Surface="anthroid" (agent sees "anthroid")
+        //   2. reply routing uses the default internal webchat path (avoids "Unknown channel: anthroid")
+        OriginatingChannel: isFromAnthroidClient ? undefined : originatingChannel,
         OriginatingTo: originatingTo,
         AccountId: accountId,
         MessageThreadId: messageThreadId,
