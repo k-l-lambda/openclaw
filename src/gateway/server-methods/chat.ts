@@ -891,6 +891,7 @@ export const chatHandlers: GatewayRequestHandlers = {
         typeof sessionScopeParts[1] === "string" &&
         sessionChannelHint === routeChannelCandidate;
       const clientMode = client?.connect?.client?.mode;
+      const isFromAnthroidClient = clientMode === GATEWAY_CLIENT_MODES.ANTHROID;
       const isFromWebchatClient =
         isWebchatClient(client?.connect?.client) || clientMode === GATEWAY_CLIENT_MODES.UI;
       const configuredMainKey = (cfg.session?.mainKey ?? "main").trim().toLowerCase();
@@ -924,6 +925,7 @@ export const chatHandlers: GatewayRequestHandlers = {
       // See: https://github.com/moltbot/moltbot/issues/3658
       const stampedMessage = injectTimestamp(parsedMessage, timestampOptsFromConfig(cfg));
 
+      const anthroidChannel = GATEWAY_CLIENT_MODES.ANTHROID;
       const ctx: MsgContext = {
         Body: parsedMessage,
         BodyForAgent: stampedMessage,
@@ -931,8 +933,8 @@ export const chatHandlers: GatewayRequestHandlers = {
         RawBody: parsedMessage,
         CommandBody: commandBody,
         SessionKey: sessionKey,
-        Provider: INTERNAL_MESSAGE_CHANNEL,
-        Surface: INTERNAL_MESSAGE_CHANNEL,
+        Provider: isFromAnthroidClient ? "KL" : INTERNAL_MESSAGE_CHANNEL,
+        Surface: isFromAnthroidClient ? anthroidChannel : INTERNAL_MESSAGE_CHANNEL,
         OriginatingChannel: originatingChannel,
         OriginatingTo: originatingTo,
         AccountId: accountId,
@@ -953,7 +955,7 @@ export const chatHandlers: GatewayRequestHandlers = {
       const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
         cfg,
         agentId,
-        channel: INTERNAL_MESSAGE_CHANNEL,
+        channel: isFromAnthroidClient ? anthroidChannel : INTERNAL_MESSAGE_CHANNEL,
       });
       const finalReplyParts: string[] = [];
       const dispatcher = createReplyDispatcher({

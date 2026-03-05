@@ -23,6 +23,7 @@ export const GATEWAY_CLIENT_MODES = {
   WEBCHAT: "webchat",
   CLI: "cli",
   UI: "ui",
+  ANTHROID: "anthroid",
   BACKEND: "backend",
   NODE: "node",
   PROBE: "probe",
