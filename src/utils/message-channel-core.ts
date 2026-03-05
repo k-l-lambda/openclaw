@@ -20,6 +20,10 @@ export function normalizeMessageChannel(raw?: string | null): string | undefined
   if (normalized === INTERNAL_MESSAGE_CHANNEL) {
     return INTERNAL_MESSAGE_CHANNEL;
   }
+  // Provider label aliases that use internal webchat delivery
+  if (normalized === "kl") {
+    return INTERNAL_MESSAGE_CHANNEL;
+  }
   const builtIn = normalizeChatChannelId(normalized);
   if (builtIn) {
     return builtIn;
