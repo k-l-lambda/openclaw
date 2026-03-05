@@ -112,14 +112,16 @@ export async function routeReply(params: RouteReplyParams): Promise<RouteReplyRe
     return { ok: true };
   }
 
-  if (channel === INTERNAL_MESSAGE_CHANNEL) {
+  // Use normalizedChannel so that aliases like "anthroid" resolve to their
+  // effective channel (e.g. "webchat") before routing.
+  if (normalizedChannel === INTERNAL_MESSAGE_CHANNEL) {
     return {
       ok: false,
-      error: "Webchat routing not supported for queued replies",
+      error: "Internal channel routing not supported for queued replies",
     };
   }
 
-  const channelId = normalizeChannelId(channel) ?? null;
+  const channelId = normalizeChannelId(normalizedChannel ?? channel) ?? null;
   if (!channelId) {
     return { ok: false, error: `Unknown channel: ${String(channel)}` };
   }
