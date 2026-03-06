@@ -13,6 +13,7 @@ import {
   resolveSessionSharingTarget,
 } from "../session-sharing.js";
 import { agentGetProfileHandler } from "./agent-get-profile.js";
+import { agentApplyMemoryPatchHandler, agentGetMemoryPatchHandler } from "./agent-memory-patch.js";
 import { agentRunHandler } from "./agent-run-handler.js";
 import type { GatewayRequestHandlers } from "./types.js";
 import { assertValidParams } from "./validation.js";
@@ -64,5 +65,7 @@ const agentWaitHandler: GatewayRequestHandlers["agent.wait"] = async ({
 export const agentHandlers: GatewayRequestHandlers = {
   agent: agentRunHandler,
   "agent.getProfile": agentGetProfileHandler,
+  "agent.getMemoryPatch": agentGetMemoryPatchHandler,
+  "agent.applyMemoryPatch": agentApplyMemoryPatchHandler,
   "agent.wait": agentWaitHandler,
 };
