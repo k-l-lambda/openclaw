@@ -773,28 +773,42 @@ export const agentHandlers: GatewayRequestHandlers = {
       agentId = resolved;
     }
     const cfg = loadConfig();
-    const agentConfig = agentId ? resolveAgentConfig(cfg, agentId) : undefined;
     const identity = resolveAssistantIdentity({ cfg, agentId });
+    // Use resolved agentId from identity (handles default agent when agentId is undefined)
+    const resolvedAgentId = identity.agentId;
+    const agentConfig = resolvedAgentId ? resolveAgentConfig(cfg, resolvedAgentId) : undefined;
 
-    // Read MEMORY.md from agent workspace
-    let memoryContent: string | undefined;
-    if (agentId) {
-      const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
+    // Read workspace files (MEMORY.md, USER.md, IDENTITY.md, SOUL.md)
+    const workspaceDir = resolveAgentWorkspaceDir(cfg, resolvedAgentId);
+    const readFile = async (name: string): Promise<string | null> => {
       try {
-        memoryContent = await fs.readFile(path.join(workspaceDir, "MEMORY.md"), "utf-8");
+        const content = await fs.readFile(path.join(workspaceDir, name), "utf-8");
+        return content.trim() ? content : null;
       } catch {
-        // MEMORY.md doesn't exist — that's fine
+        return null;
       }
-    }
+    };
+
+    const [agentsContent, memoryContent, userContent, identityContent, soulContent] = await Promise.all([
+      readFile("AGENTS.md"),
+      readFile("MEMORY.md"),
+      readFile("USER.md"),
+      readFile("IDENTITY.md"),
+      readFile("SOUL.md"),
+    ]);
 
     respond(
       true,
       {
-        agentId: identity.agentId,
+        agentId: resolvedAgentId,
         name: identity.name,
         emoji: identity.emoji,
         model: agentConfig?.model,
-        memoryContent: memoryContent ?? null,
+        agentsContent,
+        memoryContent,
+        userContent,
+        identityContent,
+        soulContent,
       },
       undefined,
     );
