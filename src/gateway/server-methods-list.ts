@@ -124,6 +124,8 @@ const BASE_METHODS = [
   "agent",
   "agent.identity.get",
   "agent.getProfile",
+  "agent.getMemoryPatch",
+  "agent.applyMemoryPatch",
   "agent.wait",
   // WebChat WebSocket-native chat methods
   "chat.history",
