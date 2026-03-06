@@ -925,10 +925,14 @@ export const agentHandlers: GatewayRequestHandlers = {
         // Write files directly
         await fs.mkdir(memoryDir, { recursive: true });
         const files = p.files as Record<string, string>;
+        const resolvedMemoryDir = path.resolve(memoryDir) + path.sep;
         for (const [name, content] of Object.entries(files)) {
-          if (typeof content === "string" && name.endsWith(".md")) {
-            await fs.writeFile(path.join(memoryDir, name), content, "utf-8");
+          if (typeof content !== "string" || !name.endsWith(".md")) continue;
+          // Path traversal guard: reject names with path separators or ".."
+          if (/[/\\]/.test(name) || name.includes("..") || !path.resolve(memoryDir, name).startsWith(resolvedMemoryDir)) {
+            continue;
           }
+          await fs.writeFile(path.join(memoryDir, name), content, "utf-8");
         }
       } else {
         respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "Invalid mode or missing data"));
