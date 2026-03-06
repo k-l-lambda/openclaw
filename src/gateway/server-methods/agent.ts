@@ -1,6 +1,10 @@
+import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 import { listAgentIds, resolveAgentConfig, resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import type { AgentInternalEvent } from "../../agents/internal-events.js";
 import { buildBareSessionResetPrompt } from "../../auto-reply/reply/session-reset-prompt.js";
@@ -812,6 +816,137 @@ export const agentHandlers: GatewayRequestHandlers = {
       },
       undefined,
     );
+  },
+  "agent.getMemoryPatch": async ({ params, respond }) => {
+    // Returns git diff patch for workspace/memory/ since a given timestamp.
+    // Params: { agentId?, sinceTimestamp? (ISO string or epoch ms) }
+    const p = params as Record<string, unknown>;
+    const cfg = loadConfig();
+    const identity = resolveAssistantIdentity({ cfg, agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined });
+    const workspaceDir = resolveAgentWorkspaceDir(cfg, identity.agentId);
+    const memoryDir = path.join(workspaceDir, "memory");
+
+    try {
+      // Parse sinceTimestamp
+      const sinceRaw = p.sinceTimestamp;
+      let sinceDate: string | undefined;
+      if (typeof sinceRaw === "number") {
+        sinceDate = new Date(sinceRaw).toISOString();
+      } else if (typeof sinceRaw === "string" && sinceRaw.trim()) {
+        sinceDate = sinceRaw.trim();
+      }
+
+      // Check if memory/ directory exists and is in a git repo
+      const gitOpts = { cwd: workspaceDir, timeout: 10_000 };
+
+      // Find the commit at sinceTimestamp (or use first commit if no timestamp)
+      let baseCommit: string;
+      if (sinceDate) {
+        try {
+          const { stdout } = await execFileAsync("git", ["log", `--before=${sinceDate}`, "--format=%H", "-1", "--", "memory/"], gitOpts);
+          baseCommit = stdout.trim();
+        } catch {
+          baseCommit = "";
+        }
+      } else {
+        baseCommit = "";
+      }
+
+      // Generate diff
+      let patch: string;
+      if (baseCommit) {
+        const { stdout } = await execFileAsync("git", ["diff", baseCommit, "HEAD", "--", "memory/"], gitOpts);
+        patch = stdout;
+      } else {
+        // No base commit — return full content of all memory/ files as a "full sync" response
+        // Instead of a git diff, enumerate files and return them as JSON
+        const files: Record<string, string> = {};
+        try {
+          const entries = await fs.readdir(memoryDir);
+          for (const entry of entries) {
+            if (entry.endsWith(".md")) {
+              const content = await fs.readFile(path.join(memoryDir, entry), "utf-8");
+              files[entry] = content;
+            }
+          }
+        } catch {
+          // memory/ doesn't exist
+        }
+        respond(true, { mode: "full", files, latestTimestamp: Date.now() }, undefined);
+        return;
+      }
+
+      // Get latest commit timestamp
+      let latestTimestamp = Date.now();
+      try {
+        const { stdout } = await execFileAsync("git", ["log", "-1", "--format=%ct", "--", "memory/"], gitOpts);
+        const epoch = parseInt(stdout.trim(), 10);
+        if (!isNaN(epoch)) latestTimestamp = epoch * 1000;
+      } catch {
+        // Use current time
+      }
+
+      respond(true, { mode: "patch", patch, latestTimestamp }, undefined);
+    } catch (err) {
+      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, `getMemoryPatch failed: ${String(err)}`));
+    }
+  },
+  "agent.applyMemoryPatch": async ({ params, respond }) => {
+    // Applies a git patch or full file set to workspace/memory/.
+    // Params: { agentId?, mode: "patch"|"full", patch?: string, files?: Record<string,string> }
+    const p = params as Record<string, unknown>;
+    const cfg = loadConfig();
+    const identity = resolveAssistantIdentity({ cfg, agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined });
+    const workspaceDir = resolveAgentWorkspaceDir(cfg, identity.agentId);
+    const memoryDir = path.join(workspaceDir, "memory");
+    const gitOpts = { cwd: workspaceDir, timeout: 10_000 };
+
+    try {
+      const mode = typeof p.mode === "string" ? p.mode : "full";
+
+      if (mode === "patch" && typeof p.patch === "string" && p.patch.trim()) {
+        // Apply git patch
+        try {
+          // Write patch to temp file, then apply
+          const tmpPatch = path.join(workspaceDir, ".anthroid-patch.tmp");
+          await fs.writeFile(tmpPatch, p.patch, "utf-8");
+          try {
+            await execFileAsync("git", ["apply", "--check", tmpPatch], gitOpts);
+            await execFileAsync("git", ["apply", tmpPatch], gitOpts);
+          } finally {
+            await fs.unlink(tmpPatch).catch(() => {});
+          }
+        } catch (applyErr) {
+          respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST,
+            `Patch apply failed (conflict?): ${String(applyErr)}. Please resolve manually.`));
+          return;
+        }
+      } else if (mode === "full" && p.files && typeof p.files === "object") {
+        // Write files directly
+        await fs.mkdir(memoryDir, { recursive: true });
+        const files = p.files as Record<string, string>;
+        for (const [name, content] of Object.entries(files)) {
+          if (typeof content === "string" && name.endsWith(".md")) {
+            await fs.writeFile(path.join(memoryDir, name), content, "utf-8");
+          }
+        }
+      } else {
+        respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "Invalid mode or missing data"));
+        return;
+      }
+
+      // Git add + commit
+      try {
+        await execFileAsync("git", ["add", "memory/"], gitOpts);
+        await execFileAsync("git", ["commit", "-m", "anthroid memory sync", "--allow-empty"], gitOpts);
+      } catch {
+        // Commit may fail if nothing changed — that's ok
+      }
+
+      respond(true, { ok: true, timestamp: Date.now() }, undefined);
+    } catch (err) {
+      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, `applyMemoryPatch failed: ${String(err)}`));
+    }
   },
   "agent.wait": async ({ params, respond, context }) => {
     if (!validateAgentWaitParams(params)) {

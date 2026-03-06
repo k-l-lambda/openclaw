@@ -61,6 +61,7 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "agents.list",
     "agent.identity.get",
     "agent.getProfile",
+    "agent.getMemoryPatch",
     "skills.status",
     "voicewake.get",
     "sessions.list",
@@ -83,6 +84,7 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "agents.files.get",
   ],
   [WRITE_SCOPE]: [
+    "agent.applyMemoryPatch",
     "send",
     "poll",
     "agent",
