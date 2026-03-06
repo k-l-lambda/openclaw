@@ -376,6 +376,14 @@ export const AgentIdentityResultSchema = closedObject({
   emoji: Type.Optional(NonEmptyString),
 });
 
+export const AgentGetProfileParamsSchema = Type.Object(
+  {
+    agentId: Type.Optional(NonEmptyString),
+    sessionKey: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
 /** Waits for a submitted agent run to complete or time out. */
 export const AgentWaitParamsSchema = closedObject({
   runId: NonEmptyString,

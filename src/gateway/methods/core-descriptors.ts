@@ -351,6 +351,7 @@ const CORE_GATEWAY_METHOD_SPECS = [
   // Params-aware: ordinary turns need write; /new and /reset mutate lifecycle state as admin.
   ["agent", "agent", "dynamic", "<=2026.7", { startup: true }],
   ["agent.identity.get", "agent-identity", "operator.read", "<=2026.7"],
+  ["agent.getProfile", "agent", "operator.read", "<=2026.7"],
   ["agent.wait", "agent", "operator.write", "<=2026.7", { startup: true }],
   ["chat.history", "chat", "operator.read", "<=2026.7", { startup: true }],
   ["chat.startup", "chat", "operator.read", "<=2026.7", { startup: true }],

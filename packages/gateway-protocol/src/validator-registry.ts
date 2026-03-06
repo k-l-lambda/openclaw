@@ -145,6 +145,7 @@ export const validateUsersAuthConnectCancelParams = compile(S.UsersAuthConnectCa
 export const validateUsersLinkAuthProfileParams = compile(S.UsersLinkAuthProfileParamsSchema);
 export const validateUsersUnlinkAuthProfileParams = compile(S.UsersUnlinkAuthProfileParamsSchema);
 export const validateAgentIdentityParams = compile(S.AgentIdentityParamsSchema);
+export const validateAgentGetProfileParams = compile(S.AgentGetProfileParamsSchema);
 export const validateAgentWaitParams = compile(S.AgentWaitParamsSchema);
 export const validateWakeParams = compile(S.WakeParamsSchema);
 export const validateAgentsListParams = compile(S.AgentsListParamsSchema);
