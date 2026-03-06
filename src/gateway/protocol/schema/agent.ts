@@ -132,6 +132,14 @@ export const AgentIdentityResultSchema = Type.Object(
   { additionalProperties: false },
 );
 
+export const AgentGetProfileParamsSchema = Type.Object(
+  {
+    agentId: Type.Optional(NonEmptyString),
+    sessionKey: Type.Optional(Type.String()),
+  },
+  { additionalProperties: false },
+);
+
 export const AgentWaitParamsSchema = Type.Object(
   {
     runId: NonEmptyString,

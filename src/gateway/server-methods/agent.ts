@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { listAgentIds } from "../../agents/agent-scope.js";
+import fs from "node:fs/promises";
+import path from "node:path";
+import { listAgentIds, resolveAgentConfig, resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import type { AgentInternalEvent } from "../../agents/internal-events.js";
 import { buildBareSessionResetPrompt } from "../../auto-reply/reply/session-reset-prompt.js";
 import { agentCommandFromIngress } from "../../commands/agent.js";
@@ -38,6 +40,7 @@ import {
   ErrorCodes,
   errorShape,
   formatValidationErrors,
+  validateAgentGetProfileParams,
   validateAgentIdentityParams,
   validateAgentParams,
   validateAgentWaitParams,
@@ -746,6 +749,55 @@ export const agentHandlers: GatewayRequestHandlers = {
         basePath: cfg.gateway?.controlUi?.basePath,
       }) ?? identity.avatar;
     respond(true, { ...identity, avatar: avatarValue }, undefined);
+  },
+  "agent.getProfile": async ({ params, respond }) => {
+    if (!validateAgentGetProfileParams(params)) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          `invalid agent.getProfile params: ${formatValidationErrors(
+            validateAgentGetProfileParams.errors,
+          )}`,
+        ),
+      );
+      return;
+    }
+    const p = params;
+    const agentIdRaw = typeof p.agentId === "string" ? p.agentId.trim() : "";
+    const sessionKeyRaw = typeof p.sessionKey === "string" ? p.sessionKey.trim() : "";
+    let agentId = agentIdRaw ? normalizeAgentId(agentIdRaw) : undefined;
+    if (sessionKeyRaw) {
+      const resolved = resolveAgentIdFromSessionKey(sessionKeyRaw);
+      agentId = resolved;
+    }
+    const cfg = loadConfig();
+    const agentConfig = agentId ? resolveAgentConfig(cfg, agentId) : undefined;
+    const identity = resolveAssistantIdentity({ cfg, agentId });
+
+    // Read MEMORY.md from agent workspace
+    let memoryContent: string | undefined;
+    if (agentId) {
+      const workspaceDir = resolveAgentWorkspaceDir(cfg, agentId);
+      try {
+        memoryContent = await fs.readFile(path.join(workspaceDir, "MEMORY.md"), "utf-8");
+      } catch {
+        // MEMORY.md doesn't exist — that's fine
+      }
+    }
+
+    respond(
+      true,
+      {
+        agentId: identity.agentId,
+        name: identity.name,
+        emoji: identity.emoji,
+        model: agentConfig?.model,
+        memoryContent: memoryContent ?? null,
+      },
+      undefined,
+    );
   },
   "agent.wait": async ({ params, respond, context }) => {
     if (!validateAgentWaitParams(params)) {
