@@ -141,6 +141,8 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "doctor.memory.backfillDreamDiary",
     "doctor.memory.resetDreamDiary",
     "doctor.memory.resetGroundedShortTerm",
+    "notification.push",
+    "browser.request",
     "push.test",
     "node.pending.enqueue",
   ],
