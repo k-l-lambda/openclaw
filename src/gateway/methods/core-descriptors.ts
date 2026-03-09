@@ -361,6 +361,7 @@ const CORE_GATEWAY_METHOD_SPECS = [
   ["chat.message.get", "chat", "operator.read", "<=2026.7", { startup: true }],
   ["chat.abort", "chat-abort", "operator.write", "<=2026.7"],
   ["chat.send", "chat", "operator.write", "<=2026.7", { startup: true }],
+  ["notification.push", "notification", "operator.write", "<=2026.7"],
   // Operator terminal: admin-only PTY surface. Appended to the advertised block
   // so existing advertised method indices stay stable for older clients.
   ["terminal.open", "terminal", "operator.admin", "2026.7"],

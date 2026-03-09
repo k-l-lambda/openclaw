@@ -1703,6 +1703,24 @@ export function createAgentEventHandler({
         }
         flushBufferedAgentDeltaIfNeeded(clientRunId);
       }
+      const shouldSuppressHeartbeat =
+        evt.stream === "assistant" &&
+        typeof (evt.data as { text?: unknown })?.text === "string" &&
+        stripHeartbeatToken((evt.data as { text: string }).text, {
+          mode: "heartbeat",
+          maxAckChars: DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
+        }).shouldSkip;
+      const broadcastPayload = shouldSuppressHeartbeat
+        ? {
+            ...agentPayload,
+            data: {
+              ...(agentPayload.data !== null && typeof agentPayload.data === "object"
+                ? agentPayload.data
+                : {}),
+              text: " ",
+            },
+          }
+        : agentPayload;
       if (
         isControlUiVisible ||
         (sessionKey &&
@@ -1723,7 +1741,7 @@ export function createAgentEventHandler({
                   ...agentPayload,
                   ...buildSessionEventSnapshot(sessionKey, undefined, sessionAgentId),
                 }
-              : agentPayload,
+              : broadcastPayload,
           // The client payload loses non-enumerable ownership on spread.
           // Delayed sends must still belong to the original run claim.
           isCurrent,
