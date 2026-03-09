@@ -357,8 +357,17 @@ export function createAgentEventHandler({
       text: bufferedText,
     });
     const text = normalizedHeartbeatText.text.trim();
+    // Content-based HEARTBEAT_OK suppression: normalizeHeartbeatChatFinalText only
+    // catches runs with isHeartbeat context; cron monitoring jobs (e.g. financer Gold
+    // Monitor) reply HEARTBEAT_OK without that flag, so also check text directly.
+    const isHeartbeatOnlyText = stripHeartbeatToken(text, {
+      mode: "heartbeat",
+      maxAckChars: resolveHeartbeatAckMaxChars(),
+    }).shouldSkip;
     const shouldSuppressSilent =
-      normalizedHeartbeatText.suppress || isSilentReplyText(text, SILENT_REPLY_TOKEN);
+      normalizedHeartbeatText.suppress ||
+      isHeartbeatOnlyText ||
+      isSilentReplyText(text, SILENT_REPLY_TOKEN);
     const shouldSuppressSilentLeadFragment = isSilentReplyLeadFragment(text);
     const shouldSuppressHeartbeatStreaming = shouldHideHeartbeatChatOutput(
       clientRunId,
