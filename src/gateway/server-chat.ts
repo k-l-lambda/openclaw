@@ -499,7 +499,27 @@ export function createAgentEventHandler({
         broadcastToConnIds("agent", toolPayload, recipients);
       }
     } else {
-      broadcast("agent", agentPayload);
+      // Strip HEARTBEAT_OK text before broadcasting to prevent connected clients
+      // (e.g. anthroid) from showing a system notification for silent cron runs.
+      const shouldSuppressHeartbeat =
+        evt.stream === "assistant" &&
+        typeof (evt.data as { text?: unknown })?.text === "string" &&
+        stripHeartbeatToken((evt.data as { text: string }).text, {
+          mode: "heartbeat",
+          maxAckChars: DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
+        }).shouldSkip;
+      const broadcastPayload = shouldSuppressHeartbeat
+        ? {
+            ...agentPayload,
+            data: {
+              ...(agentPayload.data !== null && typeof agentPayload.data === "object"
+                ? agentPayload.data
+                : {}),
+              text: " ",
+            },
+          }
+        : agentPayload;
+      broadcast("agent", broadcastPayload);
     }
 
     const lifecyclePhase =
