@@ -1,6 +1,7 @@
 import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS, stripHeartbeatToken } from "../auto-reply/heartbeat.js";
 import { normalizeVerboseLevel } from "../auto-reply/thinking.js";
 import {
+  isSilentReplyText,
   SILENT_REPLY_TOKEN,
   startsWithSilentToken,
   stripLeadingSilentToken,
@@ -753,8 +754,17 @@ export function createAgentEventHandler({
       text: bufferedText,
     });
     const text = normalizedHeartbeatText.text.trim();
+    // Content-based HEARTBEAT_OK suppression: normalizeHeartbeatChatFinalText only
+    // catches runs with isHeartbeat context; cron monitoring jobs (e.g. financer Gold
+    // Monitor) reply HEARTBEAT_OK without that flag, so also check text directly.
+    const isHeartbeatOnlyText = stripHeartbeatToken(text, {
+      mode: "heartbeat",
+      maxAckChars: resolveHeartbeatAckMaxChars(),
+    }).shouldSkip;
     const shouldSuppressSilent =
-      normalizedHeartbeatText.suppress || isSuppressedControlReplyText(text);
+      normalizedHeartbeatText.suppress ||
+      isHeartbeatOnlyText ||
+      isSilentReplyText(text, SILENT_REPLY_TOKEN);
     return { text, shouldSuppressSilent };
   };
 
