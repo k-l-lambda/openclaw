@@ -20,6 +20,7 @@ import { isActiveEmbeddedRunId } from "../agents/embedded-agent-runner/runs.js";
 import { isTimeoutError, resolveFailoverReasonFromError } from "../agents/failover-error.js";
 import { renderCodexAppServerFailureCopy } from "../agents/failover/user-copy.js";
 import { readToolValidationErrorSummary } from "../agents/tool-error-summary.js";
+import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS, stripHeartbeatToken } from "../auto-reply/heartbeat.js";
 import { normalizeVerboseLevel } from "../auto-reply/thinking.js";
 import { normalizeAgentPlanSteps } from "../channels/streaming.js";
 import { getRuntimeConfig } from "../config/io.js";
@@ -1506,6 +1507,24 @@ export function createAgentEventHandler({
         }
         flushBufferedAgentDeltaIfNeeded(clientRunId);
       }
+      const shouldSuppressHeartbeat =
+        evt.stream === "assistant" &&
+        typeof (evt.data as { text?: unknown })?.text === "string" &&
+        stripHeartbeatToken((evt.data as { text: string }).text, {
+          mode: "heartbeat",
+          maxAckChars: DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
+        }).shouldSkip;
+      const broadcastPayload = shouldSuppressHeartbeat
+        ? {
+            ...agentPayload,
+            data: {
+              ...(agentPayload.data !== null && typeof agentPayload.data === "object"
+                ? agentPayload.data
+                : {}),
+              text: " ",
+            },
+          }
+        : agentPayload;
       if (
         publishLifecycle &&
         (isControlUiVisible ||
@@ -1525,7 +1544,7 @@ export function createAgentEventHandler({
             sessionKey,
             agentId: sessionAgentId,
             controlUiVisible: isControlUiVisible,
-            payload: agentPayload,
+            payload: broadcastPayload,
             // The client payload loses non-enumerable ownership on spread.
             // Delayed sends must still belong to the original run claim.
             isCurrent,
