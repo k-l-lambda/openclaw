@@ -6,6 +6,7 @@ import { clearBootstrapSnapshot } from "../../agents/bootstrap-cache.js";
 import { abortEmbeddedPiRun, waitForEmbeddedPiRunEnd } from "../../agents/pi-embedded.js";
 import { stopSubagentsForRequester } from "../../auto-reply/reply/abort.js";
 import { clearSessionQueues } from "../../auto-reply/reply/queue.js";
+import { getExistingFollowupQueue } from "../../auto-reply/reply/queue/state.js";
 import { closeTrackedBrowserTabsForSessions } from "../../browser/session-tab-registry.js";
 import { loadConfig } from "../../config/config.js";
 import {
@@ -29,6 +30,7 @@ import {
   ErrorCodes,
   errorShape,
   validateSessionsCompactParams,
+  validateSessionsDrainPendingParams,
   validateSessionsDeleteParams,
   validateSessionsListParams,
   validateSessionsPatchParams,
@@ -750,5 +752,40 @@ export const sessionsHandlers: GatewayRequestHandlers = {
       },
       undefined,
     );
+  },
+
+  "session.drainPending": ({ params, respond }) => {
+    if (
+      !assertValidParams(
+        params,
+        validateSessionsDrainPendingParams,
+        "session.drainPending",
+        respond,
+      )
+    ) {
+      return;
+    }
+    const sessionKey = requireSessionKey(params.key, respond);
+    if (!sessionKey) return;
+
+    const queue = getExistingFollowupQueue(sessionKey);
+    if (!queue || queue.items.length === 0) {
+      respond(true, { ok: true, messages: [] }, undefined);
+      return;
+    }
+
+    const messages = queue.items.map((item) => ({
+      content: item.prompt,
+      messageId: item.messageId,
+      enqueuedAt: item.enqueuedAt,
+    }));
+
+    // Drain: clear items but keep queue alive (don't delete the queue entry)
+    queue.items.length = 0;
+    queue.droppedCount = 0;
+    queue.summaryLines = [];
+    queue.lastEnqueuedAt = 0;
+
+    respond(true, { ok: true, messages }, undefined);
   },
 };

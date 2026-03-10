@@ -108,6 +108,13 @@ export const SessionsCompactParamsSchema = Type.Object(
   { additionalProperties: false },
 );
 
+export const SessionsDrainPendingParamsSchema = Type.Object(
+  {
+    key: NonEmptyString,
+  },
+  { additionalProperties: false },
+);
+
 export const SessionsUsageParamsSchema = Type.Object(
   {
     /** Specific session key to analyze; if omitted returns all sessions. */

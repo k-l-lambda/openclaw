@@ -140,6 +140,7 @@ import {
 import {
   SessionsCompactParamsSchema,
   SessionsDeleteParamsSchema,
+  SessionsDrainPendingParamsSchema,
   SessionsListParamsSchema,
   SessionsPatchParamsSchema,
   SessionsPreviewParamsSchema,
@@ -208,6 +209,7 @@ export const ProtocolSchemas = {
   SessionsResetParams: SessionsResetParamsSchema,
   SessionsDeleteParams: SessionsDeleteParamsSchema,
   SessionsCompactParams: SessionsCompactParamsSchema,
+  SessionsDrainPendingParams: SessionsDrainPendingParamsSchema,
   SessionsUsageParams: SessionsUsageParamsSchema,
   ConfigGetParams: ConfigGetParamsSchema,
   ConfigSetParams: ConfigSetParamsSchema,
