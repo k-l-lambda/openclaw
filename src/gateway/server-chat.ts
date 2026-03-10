@@ -1,6 +1,10 @@
 import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS, stripHeartbeatToken } from "../auto-reply/heartbeat.js";
 import { normalizeVerboseLevel } from "../auto-reply/thinking.js";
-import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
+import {
+  isSilentReplyPrefixText,
+  isSilentReplyText,
+  SILENT_REPLY_TOKEN,
+} from "../auto-reply/tokens.js";
 import { loadConfig } from "../config/config.js";
 import { type AgentEventPayload, getAgentRunContext } from "../infra/agent-events.js";
 import { resolveHeartbeatVisibility } from "../infra/heartbeat-visibility.js";
@@ -472,7 +476,8 @@ export function createAgentEventHandler({
     const shouldSuppressSilent =
       normalizedHeartbeatText.suppress ||
       isHeartbeatOnlyText ||
-      isSilentReplyText(text, SILENT_REPLY_TOKEN);
+      isSilentReplyText(text, SILENT_REPLY_TOKEN) ||
+      isSilentReplyPrefixText(text, SILENT_REPLY_TOKEN);
     // Flush any throttled delta so streaming clients receive the complete text
     // before the final event. The 150 ms throttle in emitChatDelta may have
     // suppressed the most recent chunk, leaving the client with stale text.
@@ -593,15 +598,21 @@ export function createAgentEventHandler({
         broadcastToConnIds("agent", toolPayload, recipients);
       }
     } else {
-      // Strip HEARTBEAT_OK text before broadcasting to prevent connected clients
-      // (e.g. anthroid) from showing a system notification for silent cron runs.
+      // Strip HEARTBEAT_OK / NO_REPLY / "NO" text before broadcasting to prevent
+      // connected clients (e.g. anthroid) from showing a system notification for
+      // silent cron runs. LLMs sometimes reply "NO" instead of "NO_REPLY".
+      const agentText =
+        evt.stream === "assistant" && typeof (evt.data as { text?: unknown })?.text === "string"
+          ? (evt.data as { text: string }).text
+          : undefined;
       const shouldSuppressHeartbeat =
-        evt.stream === "assistant" &&
-        typeof (evt.data as { text?: unknown })?.text === "string" &&
-        stripHeartbeatToken((evt.data as { text: string }).text, {
+        agentText !== undefined &&
+        (stripHeartbeatToken(agentText, {
           mode: "heartbeat",
           maxAckChars: DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
-        }).shouldSkip;
+        }).shouldSkip ||
+          isSilentReplyText(agentText, SILENT_REPLY_TOKEN) ||
+          isSilentReplyPrefixText(agentText, SILENT_REPLY_TOKEN));
       const broadcastPayload = shouldSuppressHeartbeat
         ? {
             ...agentPayload,
