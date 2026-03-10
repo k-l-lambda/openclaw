@@ -108,6 +108,7 @@ const METHOD_SCOPE_GROUPS: Record<OperatorScope, readonly string[]> = {
     "browser.request",
     "push.test",
     "node.pending.enqueue",
+    "session.drainPending",
   ],
   [ADMIN_SCOPE]: [
     "channels.logout",
