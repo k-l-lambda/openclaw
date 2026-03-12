@@ -254,9 +254,12 @@ PAYLOAD TYPES (payload.kind):
 DELIVERY (top-level):
   { "mode": "none|announce|webhook", "channel": "<optional>", "to": "<optional>", "bestEffort": <optional-bool> }
   - Default for isolated agentTurn jobs (when delivery omitted): "announce"
-  - announce: send to chat channel (optional channel/to target)
+  - none: no outbound delivery; output is only visible to connected WebSocket clients (webchat, anthroid)
+  - announce: send summary to an EXTERNAL chat channel. Supported channels: telegram, whatsapp, discord, slack, signal, feishu, googlechat, imessage, line (or "last" for previously active channel).
+    IMPORTANT: "webchat" and "anthroid" are NOT valid delivery channels — they are internal-only and will silently fail. Use delivery.mode="none" for webchat/anthroid workflows.
   - webhook: send finished-run event as HTTP POST to delivery.to (URL required)
   - If the task needs to send to a specific chat/recipient, set announce delivery.channel/to; do not call messaging tools inside the run.
+  - For webchat/anthroid-only setups with no external channel configured, always use delivery.mode="none".
 
 CRITICAL CONSTRAINTS:
 - sessionTarget="main" REQUIRES payload.kind="systemEvent"
