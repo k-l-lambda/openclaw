@@ -166,13 +166,35 @@ gh pr comment <PR#> --body "<review content>"
 
 ## Claude Code
 
+Claude Code has the **openclaw MCP server** configured (`~/.claude/mcp.json`), providing tools to report results back:
+
+- `openclaw_sessions_list` — discover available sessions
+- `openclaw_chat_send` — send a message to an OpenClaw session (blocks until response)
+- `openclaw_chat_history` — read recent chat history
+
+### Always append MCP report-back instructions
+
+When spawning Claude Code, **always** append a report-back instruction at the end of the prompt so results flow back to the originating OpenClaw session:
+
 ```bash
 # Foreground
-bash workdir:~/project command:"claude --permission-mode bypassPermissions --print 'Your task'"
+bash workdir:~/project command:"claude --permission-mode bypassPermissions --print 'Your task here.
+
+When finished, use the openclaw_chat_send MCP tool to report your results back to the \"main\" session. Include: what was done, files changed, and any issues encountered.'"
 
 # Background
-bash workdir:~/project background:true command:"claude --permission-mode bypassPermissions --print 'Your task'"
+bash workdir:~/project background:true command:"claude --permission-mode bypassPermissions --print 'Your task here.
+
+When finished, use the openclaw_chat_send MCP tool to report your results back to the \"main\" session. Include: what was done, files changed, and any issues encountered.'"
 ```
+
+**Why MCP over `openclaw system event`?** The MCP approach delivers a full structured message into the chat session (not just a one-line event notification), and OpenClaw can respond to it conversationally.
+
+### Choosing the target session
+
+- Use `"main"` for general tasks dispatched from the main session.
+- If spawning from a cron or named session, substitute the correct `sessionKey`.
+- Claude Code can call `openclaw_sessions_list` to discover available sessions if unsure.
 
 ---
 
@@ -234,16 +256,17 @@ git worktree remove /tmp/issue-99
 1. **Use the right execution mode per agent**:
    - Codex/Pi/OpenCode: `pty:true`
    - Claude Code: `--print --permission-mode bypassPermissions` (no PTY required)
-2. **Respect tool choice** - if user asks for Codex, use Codex.
+2. **Always include MCP report-back for Claude Code** — append `openclaw_chat_send` instructions to every Claude Code prompt so results flow back to OpenClaw.
+3. **Respect tool choice** - if user asks for Codex, use Codex.
    - Orchestrator mode: do NOT hand-code patches yourself.
    - If an agent fails/hangs, respawn it or ask the user for direction, but don't silently take over.
-3. **Be patient** - don't kill sessions because they're "slow"
-4. **Monitor with process:log** - check progress without interfering
-5. **--full-auto for building** - auto-approves changes
-6. **vanilla for reviewing** - no special flags needed
-7. **Parallel is OK** - run many Codex processes at once for batch work
-8. **NEVER start Codex in ~/.openclaw/** - it'll read your soul docs and get weird ideas about the org chart!
-9. **NEVER checkout branches in ~/Projects/openclaw/** - that's the LIVE OpenClaw instance!
+4. **Be patient** - don't kill sessions because they're "slow"
+5. **Monitor with process:log** - check progress without interfering
+6. **--full-auto for building** - auto-approves changes
+7. **vanilla for reviewing** - no special flags needed
+8. **Parallel is OK** - run many Codex processes at once for batch work
+9. **NEVER start Codex in ~/.openclaw/** - it'll read your soul docs and get weird ideas about the org chart!
+10. **NEVER checkout branches in ~/Projects/openclaw/** - that's the LIVE OpenClaw instance!
 
 ---
 
@@ -265,16 +288,23 @@ This prevents the user from seeing only "Agent failed before reply" and having n
 
 ## Auto-Notify on Completion
 
-For long-running background tasks, append a wake trigger to your prompt so OpenClaw gets notified immediately when the agent finishes (instead of waiting for the next heartbeat):
+For long-running background tasks, append a completion trigger so OpenClaw gets notified immediately.
 
+### Claude Code → MCP report-back (preferred)
+
+Claude Code should use its **openclaw MCP tools** to send a full result message back:
+
+```bash
+bash workdir:~/project background:true command:"claude --permission-mode bypassPermissions --print 'Build a REST API for todos.
+
+When finished, use the openclaw_chat_send MCP tool to report your results back to the \"main\" session. Include: what was done, files changed, and any issues encountered.'"
 ```
-... your task here.
 
-When completely finished, run this command to notify me:
-openclaw system event --text "Done: [brief summary of what was built]" --mode now
-```
+This delivers a rich, conversational message directly into the OpenClaw session — OpenClaw can read, respond, and act on it immediately.
 
-**Example:**
+### Codex / Pi / OpenCode → shell event fallback
+
+For agents without MCP support, use the `openclaw system event` shell command:
 
 ```bash
 bash pty:true workdir:~/project background:true command:"codex --yolo exec 'Build a REST API for todos.
@@ -282,7 +312,7 @@ bash pty:true workdir:~/project background:true command:"codex --yolo exec 'Buil
 When completely finished, run: openclaw system event --text \"Done: Built todos REST API with CRUD endpoints\" --mode now'"
 ```
 
-This triggers an immediate wake event — Skippy gets pinged in seconds, not 10 minutes.
+This triggers an immediate wake event — OpenClaw gets pinged in seconds, not 10 minutes.
 
 ---
 

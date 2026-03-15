@@ -128,4 +128,7 @@ export default defineConfig([
   nodeBuildConfig({
     entry: ["src/hooks/bundled/*/handler.ts", "src/hooks/llm-slug-generator.ts"],
   }),
+  nodeBuildConfig({
+    entry: { "mcp-server": "src/mcp-server/index.ts" },
+  }),
 ]);
