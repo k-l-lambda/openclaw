@@ -1,0 +1,65 @@
+diff --git a/dist/providers/anthropic.js b/dist/providers/anthropic.js
+index 5aeee0d..46e9496 100644
+--- a/dist/providers/anthropic.js
++++ b/dist/providers/anthropic.js
+@@ -419,6 +419,7 @@ function createClient(model, apiKey, interleavedThinking, optionsHeaders, dynami
+             betaFeatures.push("interleaved-thinking-2025-05-14");
+         }
+         const client = new Anthropic({
++            fetch: model.fetch,
+             apiKey: null,
+             authToken: apiKey,
+             baseURL: model.baseUrl,
+@@ -438,6 +439,7 @@ function createClient(model, apiKey, interleavedThinking, optionsHeaders, dynami
+     // OAuth: Bearer auth, Claude Code identity headers
+     if (isOAuthToken(apiKey)) {
+         const client = new Anthropic({
++            fetch: model.fetch,
+             apiKey: null,
+             authToken: apiKey,
+             baseURL: model.baseUrl,
+@@ -454,6 +456,7 @@ function createClient(model, apiKey, interleavedThinking, optionsHeaders, dynami
+     }
+     // API key auth
+     const client = new Anthropic({
++        fetch: model.fetch,
+         apiKey,
+         baseURL: model.baseUrl,
+         dangerouslyAllowBrowser: true,
+diff --git a/dist/providers/openai-codex-responses.js b/dist/providers/openai-codex-responses.js
+index 6cfd828..5598f04 100644
+--- a/dist/providers/openai-codex-responses.js
++++ b/dist/providers/openai-codex-responses.js
+@@ -120,7 +120,7 @@ export const streamOpenAICodexResponses = (model, context, options) => {
+                     throw new Error("Request was aborted");
+                 }
+                 try {
+-                    response = await fetch(resolveCodexUrl(model.baseUrl), {
++                    response = await (model.fetch ?? fetch)(resolveCodexUrl(model.baseUrl), {
+                         method: "POST",
+                         headers: sseHeaders,
+                         body: bodyJson,
+diff --git a/dist/providers/openai-completions.js b/dist/providers/openai-completions.js
+index 29ae8cf..b137809 100644
+--- a/dist/providers/openai-completions.js
++++ b/dist/providers/openai-completions.js
+@@ -280,6 +280,7 @@ function createClient(model, context, apiKey, optionsHeaders) {
+         Object.assign(headers, optionsHeaders);
+     }
+     return new OpenAI({
++        fetch: model.fetch,
+         apiKey,
+         baseURL: model.baseUrl,
+         dangerouslyAllowBrowser: true,
+diff --git a/dist/providers/openai-responses.js b/dist/providers/openai-responses.js
+index 3bf172a..b1b8f87 100644
+--- a/dist/providers/openai-responses.js
++++ b/dist/providers/openai-responses.js
+@@ -124,6 +124,7 @@ function createClient(model, context, apiKey, optionsHeaders) {
+         Object.assign(headers, optionsHeaders);
+     }
+     return new OpenAI({
++        fetch: model.fetch,
+         apiKey,
+         baseURL: model.baseUrl,
+         dangerouslyAllowBrowser: true,

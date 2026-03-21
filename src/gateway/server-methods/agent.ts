@@ -5,8 +5,16 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-import { listAgentIds, resolveAgentConfig, resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
+import {
+  listAgentIds,
+  resolveAgentConfig,
+  resolveAgentWorkspaceDir,
+} from "../../agents/agent-scope.js";
 import type { AgentInternalEvent } from "../../agents/internal-events.js";
+import {
+  normalizeSpawnedRunMetadata,
+  resolveIngressWorkspaceOverrideForSpawnedRun,
+} from "../../agents/spawned-context.js";
 import { buildBareSessionResetPrompt } from "../../auto-reply/reply/session-reset-prompt.js";
 import { agentCommandFromIngress } from "../../commands/agent.js";
 import { loadConfig } from "../../config/config.js";
@@ -49,11 +57,13 @@ import {
   validateAgentParams,
   validateAgentWaitParams,
 } from "../protocol/index.js";
+import { performGatewaySessionReset } from "../session-reset-service.js";
+import { reactivateCompletedSubagentSession } from "../session-subagent-reactivation.js";
 import {
   canonicalizeSpawnedByForAgent,
+  loadGatewaySessionRow,
   loadSessionEntry,
-  pruneLegacyStoreKeys,
-  resolveGatewaySessionStoreTarget,
+  migrateAndPruneGatewaySessionStoreKey,
 } from "../session-utils.js";
 import { formatForLog } from "../ws-log.js";
 import { waitForAgentJob } from "./agent-job.js";
@@ -65,7 +75,6 @@ import {
   waitForTerminalGatewayDedupe,
 } from "./agent-wait-dedupe.js";
 import { normalizeRpcAttachmentsToChatAttachments } from "./attachment-normalize.js";
-import { sessionsHandlers } from "./sessions.js";
 import type { GatewayRequestHandlerOptions, GatewayRequestHandlers } from "./types.js";
 
 const RESET_COMMAND_RE = /^\/(new|reset)(?:\s+([\s\S]*))?$/i;
@@ -75,101 +84,121 @@ function resolveSenderIsOwnerFromClient(client: GatewayRequestHandlerOptions["cl
   return scopes.includes(ADMIN_SCOPE);
 }
 
-function isGatewayErrorShape(value: unknown): value is { code: string; message: string } {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  const candidate = value as { code?: unknown; message?: unknown };
-  return typeof candidate.code === "string" && typeof candidate.message === "string";
+function resolveAllowModelOverrideFromClient(
+  client: GatewayRequestHandlerOptions["client"],
+): boolean {
+  return resolveSenderIsOwnerFromClient(client) || client?.internal?.allowModelOverride === true;
 }
 
 async function runSessionResetFromAgent(params: {
   key: string;
   reason: "new" | "reset";
-  idempotencyKey: string;
-  context: GatewayRequestHandlerOptions["context"];
-  client: GatewayRequestHandlerOptions["client"];
-  isWebchatConnect: GatewayRequestHandlerOptions["isWebchatConnect"];
 }): Promise<
   | { ok: true; key: string; sessionId?: string }
   | { ok: false; error: ReturnType<typeof errorShape> }
 > {
-  return await new Promise((resolve) => {
-    let settled = false;
-    const settle = (
-      result:
-        | { ok: true; key: string; sessionId?: string }
-        | { ok: false; error: ReturnType<typeof errorShape> },
-    ) => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      resolve(result);
-    };
-
-    const respond: GatewayRequestHandlerOptions["respond"] = (ok, payload, error) => {
-      if (!ok) {
-        settle({
-          ok: false,
-          error: isGatewayErrorShape(error)
-            ? error
-            : errorShape(ErrorCodes.UNAVAILABLE, String(error ?? "sessions.reset failed")),
-        });
-        return;
-      }
-      const payloadObj = payload as
-        | {
-            key?: unknown;
-            entry?: {
-              sessionId?: unknown;
-            };
-          }
-        | undefined;
-      const key = typeof payloadObj?.key === "string" ? payloadObj.key : params.key;
-      const sessionId =
-        payloadObj?.entry && typeof payloadObj.entry.sessionId === "string"
-          ? payloadObj.entry.sessionId
-          : undefined;
-      settle({ ok: true, key, sessionId });
-    };
-
-    const resetResult = sessionsHandlers["sessions.reset"]({
-      req: {
-        type: "req",
-        id: `${params.idempotencyKey}:reset`,
-        method: "sessions.reset",
-      },
-      params: {
-        key: params.key,
-        reason: params.reason,
-      },
-      context: params.context,
-      client: params.client,
-      isWebchatConnect: params.isWebchatConnect,
-      respond,
-    });
-
-    void (async () => {
-      try {
-        await resetResult;
-        if (!settled) {
-          settle({
-            ok: false,
-            error: errorShape(
-              ErrorCodes.UNAVAILABLE,
-              "sessions.reset completed without returning a response",
-            ),
-          });
-        }
-      } catch (err: unknown) {
-        settle({
-          ok: false,
-          error: errorShape(ErrorCodes.UNAVAILABLE, String(err)),
-        });
-      }
-    })();
+  const result = await performGatewaySessionReset({
+    key: params.key,
+    reason: params.reason,
+    commandSource: "gateway:agent",
   });
+  if (!result.ok) {
+    return result;
+  }
+  return {
+    ok: true,
+    key: result.key,
+    sessionId: result.entry.sessionId,
+  };
+}
+
+function emitSessionsChanged(
+  context: Pick<
+    GatewayRequestHandlerOptions["context"],
+    "broadcastToConnIds" | "getSessionEventSubscriberConnIds"
+  >,
+  payload: { sessionKey?: string; reason: string },
+) {
+  const connIds = context.getSessionEventSubscriberConnIds();
+  if (connIds.size === 0) {
+    return;
+  }
+  const sessionRow = payload.sessionKey ? loadGatewaySessionRow(payload.sessionKey) : null;
+  context.broadcastToConnIds(
+    "sessions.changed",
+    {
+      ...payload,
+      ts: Date.now(),
+      ...(sessionRow
+        ? {
+            totalTokens: sessionRow.totalTokens,
+            totalTokensFresh: sessionRow.totalTokensFresh,
+            contextTokens: sessionRow.contextTokens,
+            estimatedCostUsd: sessionRow.estimatedCostUsd,
+            modelProvider: sessionRow.modelProvider,
+            model: sessionRow.model,
+            status: sessionRow.status,
+            startedAt: sessionRow.startedAt,
+            endedAt: sessionRow.endedAt,
+            runtimeMs: sessionRow.runtimeMs,
+          }
+        : {}),
+    },
+    connIds,
+    { dropIfSlow: true },
+  );
+}
+
+function dispatchAgentRunFromGateway(params: {
+  ingressOpts: Parameters<typeof agentCommandFromIngress>[0];
+  runId: string;
+  idempotencyKey: string;
+  respond: GatewayRequestHandlerOptions["respond"];
+  context: GatewayRequestHandlerOptions["context"];
+}) {
+  void agentCommandFromIngress(params.ingressOpts, defaultRuntime, params.context.deps)
+    .then((result) => {
+      const payload = {
+        runId: params.runId,
+        status: "ok" as const,
+        summary: "completed",
+        result,
+      };
+      setGatewayDedupeEntry({
+        dedupe: params.context.dedupe,
+        key: `agent:${params.idempotencyKey}`,
+        entry: {
+          ts: Date.now(),
+          ok: true,
+          payload,
+        },
+      });
+      // Send a second res frame (same id) so TS clients with expectFinal can wait.
+      // Swift clients will typically treat the first res as the result and ignore this.
+      params.respond(true, payload, undefined, { runId: params.runId });
+    })
+    .catch((err) => {
+      const error = errorShape(ErrorCodes.UNAVAILABLE, String(err));
+      const payload = {
+        runId: params.runId,
+        status: "error" as const,
+        summary: String(err),
+      };
+      setGatewayDedupeEntry({
+        dedupe: params.context.dedupe,
+        key: `agent:${params.idempotencyKey}`,
+        entry: {
+          ts: Date.now(),
+          ok: false,
+          payload,
+          error,
+        },
+      });
+      params.respond(false, payload, error, {
+        runId: params.runId,
+        error: formatForLog(err),
+      });
+    });
 }
 
 export const agentHandlers: GatewayRequestHandlers = {
@@ -189,6 +218,8 @@ export const agentHandlers: GatewayRequestHandlers = {
     const request = p as {
       message: string;
       agentId?: string;
+      provider?: string;
+      model?: string;
       to?: string;
       replyTo?: string;
       sessionId?: string;
@@ -216,21 +247,35 @@ export const agentHandlers: GatewayRequestHandlers = {
       timeout?: number;
       bestEffortDeliver?: boolean;
       label?: string;
-      spawnedBy?: string;
       inputProvenance?: InputProvenance;
     };
     const senderIsOwner = resolveSenderIsOwnerFromClient(client);
+    const allowModelOverride = resolveAllowModelOverrideFromClient(client);
+    const requestedModelOverride = Boolean(request.provider || request.model);
+    if (requestedModelOverride && !allowModelOverride) {
+      respond(
+        false,
+        undefined,
+        errorShape(
+          ErrorCodes.INVALID_REQUEST,
+          "provider/model overrides are not authorized for this caller.",
+        ),
+      );
+      return;
+    }
+    const providerOverride = allowModelOverride ? request.provider : undefined;
+    const modelOverride = allowModelOverride ? request.model : undefined;
     const cfg = loadConfig();
     const idem = request.idempotencyKey;
-    const groupIdRaw = typeof request.groupId === "string" ? request.groupId.trim() : "";
-    const groupChannelRaw =
-      typeof request.groupChannel === "string" ? request.groupChannel.trim() : "";
-    const groupSpaceRaw = typeof request.groupSpace === "string" ? request.groupSpace.trim() : "";
-    let resolvedGroupId: string | undefined = groupIdRaw || undefined;
-    let resolvedGroupChannel: string | undefined = groupChannelRaw || undefined;
-    let resolvedGroupSpace: string | undefined = groupSpaceRaw || undefined;
-    let spawnedByValue =
-      typeof request.spawnedBy === "string" ? request.spawnedBy.trim() : undefined;
+    const normalizedSpawned = normalizeSpawnedRunMetadata({
+      groupId: request.groupId,
+      groupChannel: request.groupChannel,
+      groupSpace: request.groupSpace,
+    });
+    let resolvedGroupId: string | undefined = normalizedSpawned.groupId;
+    let resolvedGroupChannel: string | undefined = normalizedSpawned.groupChannel;
+    let resolvedGroupSpace: string | undefined = normalizedSpawned.groupSpace;
+    let spawnedByValue: string | undefined;
     const inputProvenance = normalizeInputProvenance(request.inputProvenance);
     const cached = context.dedupe.get(`agent:${idem}`);
     if (cached) {
@@ -339,6 +384,7 @@ export const agentHandlers: GatewayRequestHandlers = {
     let bestEffortDeliver = requestedBestEffortDeliver ?? false;
     let cfgForAgent: ReturnType<typeof loadConfig> | undefined;
     let resolvedSessionKey = requestedSessionKey;
+    let isNewSession = false;
     let skipTimestampInjection = false;
 
     const resetCommandMatch = message.match(RESET_COMMAND_RE);
@@ -347,10 +393,6 @@ export const agentHandlers: GatewayRequestHandlers = {
       const resetResult = await runSessionResetFromAgent({
         key: requestedSessionKey,
         reason: resetReason,
-        idempotencyKey: idem,
-        context,
-        client,
-        isWebchatConnect,
       });
       if (!resetResult.ok) {
         respond(false, undefined, resetResult.error);
@@ -382,15 +424,12 @@ export const agentHandlers: GatewayRequestHandlers = {
     if (requestedSessionKey) {
       const { cfg, storePath, entry, canonicalKey } = loadSessionEntry(requestedSessionKey);
       cfgForAgent = cfg;
+      isNewSession = !entry;
       const now = Date.now();
       const sessionId = entry?.sessionId ?? randomUUID();
       const labelValue = request.label?.trim() || entry?.label;
       const sessionAgent = resolveAgentIdFromSessionKey(canonicalKey);
-      spawnedByValue = canonicalizeSpawnedByForAgent(
-        cfg,
-        sessionAgent,
-        spawnedByValue || entry?.spawnedBy,
-      );
+      spawnedByValue = canonicalizeSpawnedByForAgent(cfg, sessionAgent, entry?.spawnedBy);
       let inheritedGroup:
         | { groupId?: string; groupChannel?: string; groupSpace?: string }
         | undefined;
@@ -414,6 +453,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         sessionId,
         updatedAt: now,
         thinkingLevel: entry?.thinkingLevel,
+        fastMode: entry?.fastMode,
         verboseLevel: entry?.verboseLevel,
         reasoningLevel: entry?.reasoningLevel,
         systemSent: entry?.systemSent,
@@ -427,6 +467,7 @@ export const agentHandlers: GatewayRequestHandlers = {
         providerOverride: entry?.providerOverride,
         label: labelValue,
         spawnedBy: spawnedByValue,
+        spawnedWorkspaceDir: entry?.spawnedWorkspaceDir,
         spawnDepth: entry?.spawnDepth,
         channel: entry?.channel ?? request.channel?.trim(),
         groupId: resolvedGroupId ?? entry?.groupId,
@@ -458,18 +499,13 @@ export const agentHandlers: GatewayRequestHandlers = {
       const mainSessionKey = resolveAgentMainSessionKey({ cfg, agentId });
       if (storePath) {
         const persisted = await updateSessionStore(storePath, (store) => {
-          const target = resolveGatewaySessionStoreTarget({
+          const { primaryKey } = migrateAndPruneGatewaySessionStoreKey({
             cfg,
             key: requestedSessionKey,
             store,
           });
-          pruneLegacyStoreKeys({
-            store,
-            canonicalKey: target.canonicalKey,
-            candidates: target.storeKeys,
-          });
-          const merged = mergeSessionEntry(store[canonicalSessionKey], nextEntryPatch);
-          store[canonicalSessionKey] = merged;
+          const merged = mergeSessionEntry(store[primaryKey], nextEntryPatch);
+          store[primaryKey] = merged;
           return merged;
         });
         sessionEntry = persisted;
@@ -617,12 +653,34 @@ export const agentHandlers: GatewayRequestHandlers = {
     });
     respond(true, accepted, undefined, { runId });
 
+    if (resolvedSessionKey) {
+      reactivateCompletedSubagentSession({
+        sessionKey: resolvedSessionKey,
+        runId,
+      });
+    }
+
+    if (requestedSessionKey && resolvedSessionKey && isNewSession) {
+      emitSessionsChanged(context, {
+        sessionKey: resolvedSessionKey,
+        reason: "create",
+      });
+    }
+    if (resolvedSessionKey) {
+      emitSessionsChanged(context, {
+        sessionKey: resolvedSessionKey,
+        reason: "send",
+      });
+    }
+
     const resolvedThreadId = explicitThreadId ?? deliveryPlan.resolvedThreadId;
 
-    void agentCommandFromIngress(
-      {
+    dispatchAgentRunFromGateway({
+      ingressOpts: {
         message,
         images,
+        provider: providerOverride,
+        model: modelOverride,
         to: resolvedTo,
         sessionId: resolvedSessionId,
         sessionKey: resolvedSessionKey,
@@ -652,53 +710,19 @@ export const agentHandlers: GatewayRequestHandlers = {
         extraSystemPrompt: request.extraSystemPrompt,
         internalEvents: request.internalEvents,
         inputProvenance,
+        // Internal-only: allow workspace override for spawned subagent runs.
+        workspaceDir: resolveIngressWorkspaceOverrideForSpawnedRun({
+          spawnedBy: spawnedByValue,
+          workspaceDir: sessionEntry?.spawnedWorkspaceDir,
+        }),
         senderIsOwner,
+        allowModelOverride,
       },
-      defaultRuntime,
-      context.deps,
-    )
-      .then((result) => {
-        const payload = {
-          runId,
-          status: "ok" as const,
-          summary: "completed",
-          result,
-        };
-        setGatewayDedupeEntry({
-          dedupe: context.dedupe,
-          key: `agent:${idem}`,
-          entry: {
-            ts: Date.now(),
-            ok: true,
-            payload,
-          },
-        });
-        // Send a second res frame (same id) so TS clients with expectFinal can wait.
-        // Swift clients will typically treat the first res as the result and ignore this.
-        respond(true, payload, undefined, { runId });
-      })
-      .catch((err) => {
-        const error = errorShape(ErrorCodes.UNAVAILABLE, String(err));
-        const payload = {
-          runId,
-          status: "error" as const,
-          summary: String(err),
-        };
-        setGatewayDedupeEntry({
-          dedupe: context.dedupe,
-          key: `agent:${idem}`,
-          entry: {
-            ts: Date.now(),
-            ok: false,
-            payload,
-            error,
-          },
-        });
-        respond(false, payload, error, {
-          runId,
-          error: formatForLog(err),
-        });
-      });
+      runId,
+      idempotencyKey: idem,
+      respond,
+      context,
+    });
   },
   "agent.identity.get": ({ params, respond }) => {
     if (!validateAgentIdentityParams(params)) {
@@ -793,13 +817,14 @@ export const agentHandlers: GatewayRequestHandlers = {
       }
     };
 
-    const [agentsContent, memoryContent, userContent, identityContent, soulContent] = await Promise.all([
-      readFile("AGENTS.md"),
-      readFile("MEMORY.md"),
-      readFile("USER.md"),
-      readFile("IDENTITY.md"),
-      readFile("SOUL.md"),
-    ]);
+    const [agentsContent, memoryContent, userContent, identityContent, soulContent] =
+      await Promise.all([
+        readFile("AGENTS.md"),
+        readFile("MEMORY.md"),
+        readFile("USER.md"),
+        readFile("IDENTITY.md"),
+        readFile("SOUL.md"),
+      ]);
 
     respond(
       true,
@@ -820,9 +845,12 @@ export const agentHandlers: GatewayRequestHandlers = {
   "agent.getMemoryPatch": async ({ params, respond }) => {
     // Returns git diff patch for workspace/memory/ since a given timestamp.
     // Params: { agentId?, sinceTimestamp? (ISO string or epoch ms) }
-    const p = params as Record<string, unknown>;
+    const p = params;
     const cfg = loadConfig();
-    const identity = resolveAssistantIdentity({ cfg, agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined });
+    const identity = resolveAssistantIdentity({
+      cfg,
+      agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined,
+    });
     const workspaceDir = resolveAgentWorkspaceDir(cfg, identity.agentId);
     const memoryDir = path.join(workspaceDir, "memory");
 
@@ -843,7 +871,11 @@ export const agentHandlers: GatewayRequestHandlers = {
       let baseCommit: string;
       if (sinceDate) {
         try {
-          const { stdout } = await execFileAsync("git", ["log", `--before=${sinceDate}`, "--format=%H", "-1", "--", "memory/"], gitOpts);
+          const { stdout } = await execFileAsync(
+            "git",
+            ["log", `--before=${sinceDate}`, "--format=%H", "-1", "--", "memory/"],
+            gitOpts,
+          );
           baseCommit = stdout.trim();
         } catch {
           baseCommit = "";
@@ -855,7 +887,11 @@ export const agentHandlers: GatewayRequestHandlers = {
       // Generate diff
       let patch: string;
       if (baseCommit) {
-        const { stdout } = await execFileAsync("git", ["diff", baseCommit, "HEAD", "--", "memory/"], gitOpts);
+        const { stdout } = await execFileAsync(
+          "git",
+          ["diff", baseCommit, "HEAD", "--", "memory/"],
+          gitOpts,
+        );
         patch = stdout;
       } else {
         // No base commit — return full content of all memory/ files as a "full sync" response
@@ -879,24 +915,37 @@ export const agentHandlers: GatewayRequestHandlers = {
       // Get latest commit timestamp
       let latestTimestamp = Date.now();
       try {
-        const { stdout } = await execFileAsync("git", ["log", "-1", "--format=%ct", "--", "memory/"], gitOpts);
+        const { stdout } = await execFileAsync(
+          "git",
+          ["log", "-1", "--format=%ct", "--", "memory/"],
+          gitOpts,
+        );
         const epoch = parseInt(stdout.trim(), 10);
-        if (!isNaN(epoch)) latestTimestamp = epoch * 1000;
+        if (!isNaN(epoch)) {
+          latestTimestamp = epoch * 1000;
+        }
       } catch {
         // Use current time
       }
 
       respond(true, { mode: "patch", patch, latestTimestamp }, undefined);
     } catch (err) {
-      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, `getMemoryPatch failed: ${String(err)}`));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, `getMemoryPatch failed: ${String(err)}`),
+      );
     }
   },
   "agent.applyMemoryPatch": async ({ params, respond }) => {
     // Applies a git patch or full file set to workspace/memory/.
     // Params: { agentId?, mode: "patch"|"full", patch?: string, files?: Record<string,string> }
-    const p = params as Record<string, unknown>;
+    const p = params;
     const cfg = loadConfig();
-    const identity = resolveAssistantIdentity({ cfg, agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined });
+    const identity = resolveAssistantIdentity({
+      cfg,
+      agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined,
+    });
     const workspaceDir = resolveAgentWorkspaceDir(cfg, identity.agentId);
     const memoryDir = path.join(workspaceDir, "memory");
     const gitOpts = { cwd: workspaceDir, timeout: 10_000 };
@@ -917,8 +966,14 @@ export const agentHandlers: GatewayRequestHandlers = {
             await fs.unlink(tmpPatch).catch(() => {});
           }
         } catch (applyErr) {
-          respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST,
-            `Patch apply failed (conflict?): ${String(applyErr)}. Please resolve manually.`));
+          respond(
+            false,
+            undefined,
+            errorShape(
+              ErrorCodes.INVALID_REQUEST,
+              `Patch apply failed (conflict?): ${String(applyErr)}. Please resolve manually.`,
+            ),
+          );
           return;
         }
       } else if (mode === "full" && p.files && typeof p.files === "object") {
@@ -927,29 +982,47 @@ export const agentHandlers: GatewayRequestHandlers = {
         const files = p.files as Record<string, string>;
         const resolvedMemoryDir = path.resolve(memoryDir) + path.sep;
         for (const [name, content] of Object.entries(files)) {
-          if (typeof content !== "string" || !name.endsWith(".md")) continue;
+          if (typeof content !== "string" || !name.endsWith(".md")) {
+            continue;
+          }
           // Path traversal guard: reject names with path separators or ".."
-          if (/[/\\]/.test(name) || name.includes("..") || !path.resolve(memoryDir, name).startsWith(resolvedMemoryDir)) {
+          if (
+            /[/\\]/.test(name) ||
+            name.includes("..") ||
+            !path.resolve(memoryDir, name).startsWith(resolvedMemoryDir)
+          ) {
             continue;
           }
           await fs.writeFile(path.join(memoryDir, name), content, "utf-8");
         }
       } else {
-        respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "Invalid mode or missing data"));
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.INVALID_REQUEST, "Invalid mode or missing data"),
+        );
         return;
       }
 
       // Git add + commit
       try {
         await execFileAsync("git", ["add", "memory/"], gitOpts);
-        await execFileAsync("git", ["commit", "-m", "anthroid memory sync", "--allow-empty"], gitOpts);
+        await execFileAsync(
+          "git",
+          ["commit", "-m", "anthroid memory sync", "--allow-empty"],
+          gitOpts,
+        );
       } catch {
         // Commit may fail if nothing changed — that's ok
       }
 
       respond(true, { ok: true, timestamp: Date.now() }, undefined);
     } catch (err) {
-      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, `applyMemoryPatch failed: ${String(err)}`));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, `applyMemoryPatch failed: ${String(err)}`),
+      );
     }
   },
   "agent.wait": async ({ params, respond, context }) => {
