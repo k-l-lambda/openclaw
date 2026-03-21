@@ -208,6 +208,7 @@ export const ModelDefinitionSchema = z
     id: z.string().min(1),
     name: z.string().min(1),
     api: ModelApiSchema.optional(),
+    proxyUrl: z.string().url().optional(),
     reasoning: z.boolean().optional(),
     input: z.array(z.union([z.literal("text"), z.literal("image")])).optional(),
     cost: z
@@ -234,6 +235,7 @@ export const ModelProviderSchema = z
       .union([z.literal("api-key"), z.literal("aws-sdk"), z.literal("oauth"), z.literal("token")])
       .optional(),
     api: ModelApiSchema.optional(),
+    proxyUrl: z.string().url().optional(),
     injectNumCtxForOpenAICompat: z.boolean().optional(),
     headers: z.record(z.string(), SecretInputSchema.register(sensitive)).optional(),
     authHeader: z.boolean().optional(),

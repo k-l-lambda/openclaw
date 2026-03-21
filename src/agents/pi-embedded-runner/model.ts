@@ -2,6 +2,7 @@ import type { Api, Model } from "@mariozechner/pi-ai";
 import type { AuthStorage, ModelRegistry } from "@mariozechner/pi-coding-agent";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { ModelDefinitionConfig } from "../../config/types.js";
+import { makeProxyFetch } from "../../infra/net/proxy-fetch.js";
 import { resolveOpenClawAgentDir } from "../agent-paths.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../defaults.js";
 import { buildModelAliasLines } from "../model-alias-lines.js";
@@ -10,6 +11,12 @@ import { resolveForwardCompatModel } from "../model-forward-compat.js";
 import { findNormalizedProviderValue, normalizeProviderId } from "../model-selection.js";
 import { discoverAuthStorage, discoverModels } from "../pi-model-discovery.js";
 import { normalizeResolvedProviderModel } from "./model.provider-normalization.js";
+
+declare module "@mariozechner/pi-ai" {
+  interface Model<_TApi extends Api> {
+    fetch?: typeof globalThis.fetch;
+  }
+}
 
 type InlineModelEntry = ModelDefinitionConfig & {
   provider: string;
@@ -21,6 +28,7 @@ type InlineProviderConfig = {
   api?: ModelDefinitionConfig["api"];
   models?: ModelDefinitionConfig[];
   headers?: unknown;
+  proxyUrl?: string;
 };
 
 function sanitizeModelHeaders(
@@ -83,7 +91,14 @@ function applyConfiguredProviderOverrides(params: {
   });
   const providerHeaders = sanitizeModelHeaders(providerConfig.headers);
   const configuredHeaders = sanitizeModelHeaders(configuredModel?.headers);
-  if (!configuredModel && !providerConfig.baseUrl && !providerConfig.api && !providerHeaders) {
+  const proxyFetch = providerConfig.proxyUrl ? makeProxyFetch(providerConfig.proxyUrl) : undefined;
+  if (
+    !configuredModel &&
+    !providerConfig.baseUrl &&
+    !providerConfig.api &&
+    !providerHeaders &&
+    !proxyFetch
+  ) {
     return {
       ...discoveredModel,
       headers: discoveredHeaders,
@@ -107,6 +122,7 @@ function applyConfiguredProviderOverrides(params: {
           }
         : undefined,
     compat: configuredModel?.compat ?? discoveredModel.compat,
+    ...(proxyFetch ? { fetch: proxyFetch } : {}),
   };
 }
 
@@ -143,10 +159,11 @@ export function resolveModelWithRegistry(params: {
   modelId: string;
   modelRegistry: ModelRegistry;
   cfg?: OpenClawConfig;
+  // oxlint-disable-next-line typescript/no-redundant-type-constituents
 }): Model<Api> | undefined {
   const { provider, modelId, modelRegistry, cfg } = params;
   const providerConfig = resolveConfiguredProviderConfig(cfg, provider);
-  const model = modelRegistry.find(provider, modelId) as Model<Api> | null;
+  const model = modelRegistry.find(provider, modelId);
 
   if (model) {
     return normalizeResolvedModel({
@@ -207,6 +224,9 @@ export function resolveModelWithRegistry(params: {
   const configuredModel = providerConfig?.models?.find((candidate) => candidate.id === modelId);
   const providerHeaders = sanitizeModelHeaders(providerConfig?.headers);
   const modelHeaders = sanitizeModelHeaders(configuredModel?.headers);
+  const inlineProxyFetch = providerConfig?.proxyUrl
+    ? makeProxyFetch(providerConfig.proxyUrl)
+    : undefined;
   if (providerConfig || modelId.startsWith("mock-")) {
     return normalizeResolvedModel({
       provider,
@@ -229,6 +249,7 @@ export function resolveModelWithRegistry(params: {
           DEFAULT_CONTEXT_TOKENS,
         headers:
           providerHeaders || modelHeaders ? { ...providerHeaders, ...modelHeaders } : undefined,
+        ...(inlineProxyFetch ? { fetch: inlineProxyFetch } : {}),
       } as Model<Api>,
     });
   }
