@@ -26,6 +26,19 @@ index 6abaaa94b90c31fb3c5fa87c3b9634926b4c4887..cb30a02d4aa6cebbcd1fcabe1c85c01a
          apiKey,
          baseURL: model.baseUrl,
          dangerouslyAllowBrowser: true,
+diff --git a/dist/providers/openai-codex-responses.js b/dist/providers/openai-codex-responses.js
+index 76efb05bf2724ce15af5fac82c2518e046a62db7..885ff9d8757f7a14080deb829fb63cb12de96349 100644
+--- a/dist/providers/openai-codex-responses.js
++++ b/dist/providers/openai-codex-responses.js
+@@ -118,7 +118,7 @@
+                     throw new Error("Request was aborted");
+                 }
+                 try {
+-                    response = await fetch(resolveCodexUrl(model.baseUrl), {
++                    response = await (model.fetch ?? fetch)(resolveCodexUrl(model.baseUrl), {
+                         method: "POST",
+                         headers,
+                         body: bodyJson,
 diff --git a/dist/providers/openai-completions.js b/dist/providers/openai-completions.js
 index c37f67f164c8880474cfd2c221d130594c273d08..eaa11a573af974977f82c5451ef06bfc28e213ae 100644
 --- a/dist/providers/openai-completions.js
