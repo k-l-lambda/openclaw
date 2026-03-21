@@ -20,6 +20,7 @@ import {
 } from "../model-suppression.js";
 import { attachModelProviderLocalService } from "../provider-local-service.js";
 import {
+  applyProviderProxyUrlShorthand,
   attachModelProviderRequestRouteFacts,
   attachModelProviderRequestTransport,
   resolveProviderRequestConfig,
@@ -424,7 +425,9 @@ export function applyConfiguredProviderOverrides(params: {
   const providerHeaders = sanitizeModelHeaders(providerConfig.headers, {
     stripSecretRefMarkers: true,
   });
-  const providerRequest = sanitizeConfiguredModelProviderRequest(providerConfig.request);
+  const providerRequest = sanitizeConfiguredModelProviderRequest(
+    applyProviderProxyUrlShorthand(providerConfig.request, providerConfig.proxyUrl),
+  );
   const configuredHeaders = sanitizeModelHeaders(configuredModel?.headers, {
     stripSecretRefMarkers: true,
   });

@@ -177,6 +177,8 @@ export type ModelProviderConfig = {
   auth?: ModelProviderAuthMode;
   /** Default API adapter for models under this provider. */
   api?: ModelApi;
+  /** Optional per-provider outbound proxy URL for model requests. */
+  proxyUrl?: string;
   /** Provider-level default max output tokens. */
   maxTokens?: number;
   /** Provider request timeout in seconds. */

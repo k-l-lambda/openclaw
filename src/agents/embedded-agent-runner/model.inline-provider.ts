@@ -41,6 +41,7 @@ export type InlineProviderConfig = {
   timeoutSeconds?: ModelProviderConfig["timeoutSeconds"];
   request?: ModelProviderConfig["request"];
   localService?: ModelProviderConfig["localService"];
+  proxyUrl?: string;
 };
 
 /** Returns a supported transport API id from raw config values. */

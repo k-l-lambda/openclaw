@@ -409,6 +409,7 @@ const ModelDefinitionSchema = z
     name: z.string().min(1),
     api: ModelApiSchema.optional(),
     baseUrl: z.string().min(1).optional(),
+    proxyUrl: z.string().url().optional(),
     reasoning: z.boolean().optional(),
     input: z
       .array(
@@ -473,6 +474,7 @@ const ModelProviderSchema = z
       .union([z.literal("api-key"), z.literal("aws-sdk"), z.literal("oauth"), z.literal("token")])
       .optional(),
     api: ModelApiSchema.optional(),
+    proxyUrl: z.string().url().optional(),
     maxTokens: z.number().positive().optional(),
     timeoutSeconds: z.number().int().positive().optional(),
     region: z.string().min(1).optional(),

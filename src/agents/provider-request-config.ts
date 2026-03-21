@@ -338,6 +338,25 @@ export function sanitizeConfiguredProviderRequest(
   };
 }
 
+/**
+ * Lowers the `models.providers.<id>.proxyUrl` shorthand into an explicit-proxy
+ * request override. An existing `request.proxy` always wins, so the shorthand
+ * only fills in when no proxy was configured the long way.
+ */
+export function applyProviderProxyUrlShorthand<T extends ConfiguredModelProviderRequest>(
+  request: T | undefined,
+  proxyUrl: string | undefined,
+): T | ConfiguredModelProviderRequest | undefined {
+  const trimmed = proxyUrl?.trim();
+  if (!trimmed || request?.proxy) {
+    return request;
+  }
+  return {
+    ...(request ?? {}),
+    proxy: { mode: "explicit-proxy", url: trimmed },
+  } as ConfiguredModelProviderRequest;
+}
+
 /** Sanitizes model-level request overrides after secret resolution. */
 export function sanitizeConfiguredModelProviderRequest(
   request: ConfiguredModelProviderRequest | undefined,

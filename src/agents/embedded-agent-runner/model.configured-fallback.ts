@@ -7,6 +7,7 @@ import { DEFAULT_CONTEXT_TOKENS } from "../defaults.js";
 import { resolveCatalogOwnedModelCompat } from "../model-compat-catalog.js";
 import { attachModelProviderLocalService } from "../provider-local-service.js";
 import {
+  applyProviderProxyUrlShorthand,
   attachModelProviderRequestRouteFacts,
   attachModelProviderRequestTransport,
   resolveProviderRequestConfig,
@@ -69,7 +70,9 @@ export function buildConfiguredFallbackModel(params: {
   const providerHeaders = sanitizeModelHeaders(providerConfig?.headers, {
     stripSecretRefMarkers: true,
   });
-  const providerRequest = sanitizeConfiguredModelProviderRequest(providerConfig?.request);
+  const providerRequest = sanitizeConfiguredModelProviderRequest(
+    applyProviderProxyUrlShorthand(providerConfig?.request, providerConfig?.proxyUrl),
+  );
   const staticCatalogHeaders = sanitizeModelHeaders(staticCatalogModel?.headers, {
     stripSecretRefMarkers: true,
   });
