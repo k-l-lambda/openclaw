@@ -10,6 +10,7 @@ import { DEFAULT_CONTEXT_TOKENS } from "../defaults.js";
 import { resolveCatalogOwnedModelCompat } from "../model-compat-catalog.js";
 import { attachModelProviderLocalService } from "../provider-local-service.js";
 import {
+  applyProviderProxyUrlShorthand,
   attachModelProviderRequestRouteFacts,
   attachModelProviderRequestTransport,
   resolveProviderRequestConfig,
@@ -66,7 +67,9 @@ export function buildConfiguredFallbackModel(params: {
     configuredModel?.mediaInput,
   );
   const providerHeaders = sanitizeModelHeaders(providerConfig?.headers);
-  const providerRequest = sanitizeConfiguredModelProviderRequest(providerConfig?.request);
+  const providerRequest = sanitizeConfiguredModelProviderRequest(
+    applyProviderProxyUrlShorthand(providerConfig?.request, providerConfig?.proxyUrl),
+  );
   const staticCatalogHeaders = sanitizeModelHeaders(staticCatalogModel?.headers);
   const modelHeaders = sanitizeModelHeaders(configuredModel?.headers);
   const resolvedParams = mergeConfiguredRuntimeModelParams({

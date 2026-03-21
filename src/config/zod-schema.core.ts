@@ -251,6 +251,7 @@ const ModelDefinitionSchema = z.strictObject({
   api: ModelApiSchema.optional(),
   /** Optional base URL override for this model. */
   baseUrl: z.string().min(1).optional(),
+  proxyUrl: z.string().url().optional(),
   reasoning: z.boolean().optional(),
   input: z
     .array(z.union([z.literal("text"), z.literal("image"), z.literal("video"), z.literal("audio")]))
@@ -328,6 +329,8 @@ const ModelProviderSchema = z.strictObject({
     .optional(),
   /** Default API adapter for models under this provider. */
   api: ModelApiSchema.optional(),
+  /** Optional per-provider outbound proxy URL for model requests. */
+  proxyUrl: z.string().url().optional(),
   /** Provider-level default max output tokens. */
   maxTokens: z.number().positive().optional(),
   timeoutSeconds: z.number().int().positive().optional(),

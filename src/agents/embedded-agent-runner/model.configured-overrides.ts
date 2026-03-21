@@ -31,6 +31,7 @@ import {
 import { resolveProviderEndpoint } from "../provider-attribution.js";
 import { attachModelProviderLocalService } from "../provider-local-service.js";
 import {
+  applyProviderProxyUrlShorthand,
   attachModelProviderRequestRouteFacts,
   attachModelProviderRequestTransport,
   resolveProviderRequestConfig,
@@ -440,7 +441,9 @@ export function applyConfiguredProviderOverrides(params: {
       ? undefined
       : configuredModel;
   const providerHeaders = sanitizeModelHeaders(providerConfig.headers);
-  const providerRequest = sanitizeConfiguredModelProviderRequest(providerConfig.request);
+  const providerRequest = sanitizeConfiguredModelProviderRequest(
+    applyProviderProxyUrlShorthand(providerConfig.request, providerConfig.proxyUrl),
+  );
   const configuredHeaders = sanitizeModelHeaders(configuredModel?.headers);
   const providerParams = readModelParams(providerConfig.params);
   const configuredRequestParams = {
