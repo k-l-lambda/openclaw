@@ -12,6 +12,7 @@ import {
   normalizeProviderResolvedModelWithPlugin,
   shouldPreferProviderRuntimeResolvedModel,
 } from "../../plugins/provider-runtime.js";
+import { makeProxyFetch } from "../../infra/net/proxy-fetch.js";
 import type { ProviderRuntimeModel } from "../../plugins/types.js";
 import { resolveOpenClawAgentDir } from "../agent-paths.js";
 import { DEFAULT_CONTEXT_TOKENS } from "../defaults.js";
@@ -281,12 +282,14 @@ function applyConfiguredProviderOverrides(params: {
   const configuredHeaders = sanitizeModelHeaders(configuredModel?.headers, {
     stripSecretRefMarkers: true,
   });
+  const proxyFetch = providerConfig.proxyUrl ? makeProxyFetch(providerConfig.proxyUrl) : undefined;
   if (
     !configuredModel &&
     !providerConfig.baseUrl &&
     !providerConfig.api &&
     !providerHeaders &&
-    !providerRequest
+    !providerRequest &&
+    !proxyFetch
   ) {
     return {
       ...discoveredModel,
@@ -336,6 +339,7 @@ function applyConfiguredProviderOverrides(params: {
       maxTokens: configuredModel?.maxTokens ?? discoveredModel.maxTokens,
       headers: requestConfig.headers,
       compat: configuredModel?.compat ?? discoveredModel.compat,
+      ...(proxyFetch ? { fetch: proxyFetch } : {}),
     },
     providerRequest,
   );
@@ -483,6 +487,9 @@ function resolveConfiguredFallbackModel(params: {
   const modelHeaders = sanitizeModelHeaders(configuredModel?.headers, {
     stripSecretRefMarkers: true,
   });
+  const inlineProxyFetch = providerConfig?.proxyUrl
+    ? makeProxyFetch(providerConfig.proxyUrl)
+    : undefined;
   if (!providerConfig && !modelId.startsWith("mock-")) {
     return undefined;
   }
@@ -533,6 +540,7 @@ function resolveConfiguredFallbackModel(params: {
           providerConfig?.models?.[0]?.maxTokens ??
           DEFAULT_CONTEXT_TOKENS,
         headers: requestConfig.headers,
+        ...(inlineProxyFetch ? { fetch: inlineProxyFetch } : {}),
       } as Model<Api>,
       providerRequest,
     ),

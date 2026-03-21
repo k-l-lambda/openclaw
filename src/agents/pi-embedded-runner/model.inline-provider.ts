@@ -23,6 +23,7 @@ export type InlineProviderConfig = {
   headers?: unknown;
   authHeader?: boolean;
   request?: ModelProviderConfig["request"];
+  proxyUrl?: string;
 };
 
 export function normalizeResolvedTransportApi(
