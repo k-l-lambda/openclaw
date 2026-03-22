@@ -388,7 +388,7 @@ describe("applyMinimaxApiConfig", () => {
 
   it("keeps reasoning enabled for MiniMax-M2.7", () => {
     const cfg = applyMinimaxApiConfig({}, "MiniMax-M2.7");
-    expect(cfg.models?.providers?.minimax?.models[0]?.reasoning).toBe(true);
+    expect(cfg.models?.providers?.minimax?.models![0]?.reasoning).toBe(true);
   });
 
   it("preserves existing model params when adding alias", () => {
@@ -424,7 +424,7 @@ describe("applyMinimaxApiConfig", () => {
     expect(cfg.models?.providers?.minimax?.api).toBe("anthropic-messages");
     expect(cfg.models?.providers?.minimax?.authHeader).toBe(true);
     expect(cfg.models?.providers?.minimax?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.minimax?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.minimax?.models!.map((m) => m.id)).toEqual([
       "old-model",
       "MiniMax-M2.7",
     ]);
@@ -521,7 +521,7 @@ describe("applySyntheticConfig", () => {
     expect(cfg.models?.providers?.synthetic?.baseUrl).toBe("https://api.synthetic.new/anthropic");
     expect(cfg.models?.providers?.synthetic?.api).toBe("anthropic-messages");
     expect(cfg.models?.providers?.synthetic?.apiKey).toBe("old-key");
-    const ids = cfg.models?.providers?.synthetic?.models.map((m) => m.id);
+    const ids = cfg.models?.providers?.synthetic?.models!.map((m) => m.id);
     expect(ids).toContain("old-model");
     expect(ids).toContain(SYNTHETIC_DEFAULT_MODEL_ID);
   });
@@ -557,7 +557,7 @@ describe("applyXiaomiConfig", () => {
       baseUrl: "https://api.xiaomimimo.com/v1",
       api: "openai-completions",
     });
-    expect(cfg.models?.providers?.xiaomi?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.xiaomi?.models!.map((m) => m.id)).toEqual([
       "mimo-v2-flash",
       "mimo-v2-pro",
       "mimo-v2-omni",
@@ -578,7 +578,7 @@ describe("applyXiaomiConfig", () => {
     expect(cfg.models?.providers?.xiaomi?.baseUrl).toBe("https://api.xiaomimimo.com/v1");
     expect(cfg.models?.providers?.xiaomi?.api).toBe("openai-completions");
     expect(cfg.models?.providers?.xiaomi?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.xiaomi?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.xiaomi?.models!.map((m) => m.id)).toEqual([
       "custom-model",
       "mimo-v2-flash",
       "mimo-v2-pro",
@@ -612,7 +612,7 @@ describe("applyXaiProviderConfig", () => {
     expect(cfg.models?.providers?.xai?.baseUrl).toBe("https://api.x.ai/v1");
     expect(cfg.models?.providers?.xai?.api).toBe("openai-completions");
     expect(cfg.models?.providers?.xai?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.xai?.models.map((m) => m.id)).toEqual(
+    expect(cfg.models?.providers?.xai?.models!.map((m) => m.id)).toEqual(
       expect.arrayContaining([
         "custom-model",
         "grok-4",
@@ -650,11 +650,11 @@ describe("applyMistralProviderConfig", () => {
     expect(cfg.models?.providers?.mistral?.baseUrl).toBe("https://api.mistral.ai/v1");
     expect(cfg.models?.providers?.mistral?.api).toBe("openai-completions");
     expect(cfg.models?.providers?.mistral?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.mistral?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.mistral?.models!.map((m) => m.id)).toEqual([
       "custom-model",
       "mistral-large-latest",
     ]);
-    const mistralDefault = cfg.models?.providers?.mistral?.models.find(
+    const mistralDefault = cfg.models?.providers?.mistral?.models!.find(
       (model) => model.id === "mistral-large-latest",
     );
     expect(mistralDefault?.contextWindow).toBe(262144);
@@ -751,7 +751,7 @@ describe("applyLitellmProviderConfig", () => {
     expect(cfg.models?.providers?.litellm?.baseUrl).toBe("https://litellm.example/v1");
     expect(cfg.models?.providers?.litellm?.api).toBe("openai-completions");
     expect(cfg.models?.providers?.litellm?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.litellm?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.litellm?.models!.map((m) => m.id)).toEqual([
       "custom-model",
       "claude-opus-4-6",
     ]);

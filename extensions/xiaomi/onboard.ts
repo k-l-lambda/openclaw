@@ -19,7 +19,7 @@ export function applyXiaomiProviderConfig(cfg: OpenClawConfig): OpenClawConfig {
     agentModels: models,
     providerId: "xiaomi",
     api: resolvedApi,
-    baseUrl: defaultProvider.baseUrl,
+    baseUrl: defaultProvider.baseUrl ?? "",
     defaultModels: defaultProvider.models ?? [],
     defaultModelId: XIAOMI_DEFAULT_MODEL_ID,
   });

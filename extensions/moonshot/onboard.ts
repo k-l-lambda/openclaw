@@ -24,7 +24,7 @@ function applyMoonshotProviderConfigWithBaseUrl(
   baseUrl: string,
   primaryModelRef?: string,
 ): OpenClawConfig {
-  const defaultModel = buildMoonshotProvider().models[0];
+  const defaultModel = buildMoonshotProvider().models?.[0];
   if (!defaultModel) {
     return cfg;
   }

@@ -28,9 +28,9 @@ describe("Kimi implicit provider (#22409)", () => {
     expect(provider.baseUrl).toBe("https://api.kimi.com/coding/");
     expect(provider.headers).toEqual({ "User-Agent": "claude-code/0.1.0" });
     expect(provider.models).toBeDefined();
-    expect(provider.models.length).toBeGreaterThan(0);
-    expect(provider.models[0].id).toBe("kimi-code");
-    expect(provider.models.some((model) => model.id === "k2p5")).toBe(true);
+    expect(provider.models!.length).toBeGreaterThan(0);
+    expect(provider.models![0].id).toBe("kimi-code");
+    expect(provider.models!.some((model) => model.id === "k2p5")).toBe(true);
   });
 
   it("should not include Kimi when no API key is configured", async () => {

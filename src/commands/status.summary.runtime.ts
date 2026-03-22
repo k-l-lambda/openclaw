@@ -98,7 +98,7 @@ function resolveConfiguredStatusModelRef(params: {
       );
       if (availableProvider) {
         const [providerName, providerCfg] = availableProvider;
-        return { provider: providerName, model: providerCfg.models[0].id };
+        return { provider: providerName, model: providerCfg.models![0].id };
       }
     }
   }

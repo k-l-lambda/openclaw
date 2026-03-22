@@ -280,7 +280,7 @@ function normalizeProviderModels(
   normalizeId: (id: string) => string,
 ): ProviderConfig {
   let mutated = false;
-  const models = provider.models.map((model) => {
+  const models = (provider.models ?? []).map((model) => {
     const nextId = normalizeId(model.id);
     if (nextId === model.id) {
       return model;
