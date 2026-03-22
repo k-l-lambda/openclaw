@@ -170,7 +170,7 @@ export type ModelDefinitionConfig = {
 
 export type ModelProviderConfig = {
   /** Provider API base URL. */
-  baseUrl: string;
+  baseUrl?: string;
   /** API key or secret reference for this provider. */
   apiKey?: SecretInput;
   /** Authentication mode used when resolving credentials for this provider. */
@@ -199,7 +199,7 @@ export type ModelProviderConfig = {
   /** Provider request transport/retry overrides. */
   request?: ConfiguredModelProviderRequest;
   /** Model catalog entries exposed by this provider. */
-  models: ModelDefinitionConfig[];
+  models?: ModelDefinitionConfig[];
 };
 
 /** Fully materialized provider declaration emitted by provider catalog plugins. */
