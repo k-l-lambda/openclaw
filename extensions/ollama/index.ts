@@ -195,7 +195,7 @@ export default definePluginEntry({
           const provider = await buildOllamaProvider(explicit?.baseUrl, {
             quiet: !hasRealOllamaKey && !hasMeaningfulExplicitConfig,
           });
-          if (provider.models.length === 0 && !ollamaKey && !explicit?.apiKey) {
+          if ((provider.models?.length ?? 0) === 0 && !ollamaKey && !explicit?.apiKey) {
             return null;
           }
           return {
