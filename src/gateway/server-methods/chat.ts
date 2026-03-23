@@ -1249,10 +1249,12 @@ export const chatHandlers: GatewayRequestHandlers = {
       sessionKey,
       limit,
       maxChars: rpcMaxChars,
+      rawContent,
     } = params as {
       sessionKey: string;
       limit?: number;
       maxChars?: number;
+      rawContent?: boolean;
     };
     const { cfg, storePath, entry } = loadSessionEntry(sessionKey);
     const configMaxChars = cfg.gateway?.webchat?.chatHistoryMaxChars;
@@ -1278,21 +1280,27 @@ export const chatHandlers: GatewayRequestHandlers = {
     const max = Math.min(hardMax, requested);
     const sliced = rawMessages.length > max ? rawMessages.slice(-max) : rawMessages;
     const sanitized = stripEnvelopeFromMessages(sliced);
-    const normalized = sanitizeChatHistoryMessages(sanitized, effectiveMaxChars);
-    const maxHistoryBytes = getMaxChatHistoryMessagesBytes();
-    const perMessageHardCap = Math.min(CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES, maxHistoryBytes);
-    const replaced = replaceOversizedChatHistoryMessages({
-      messages: normalized,
-      maxSingleMessageBytes: perMessageHardCap,
-    });
-    const capped = capArrayByJsonBytes(replaced.messages, maxHistoryBytes).items;
-    const bounded = enforceChatHistoryFinalBudget({ messages: capped, maxBytes: maxHistoryBytes });
-    const placeholderCount = replaced.replacedCount + bounded.placeholderCount;
-    if (placeholderCount > 0) {
-      chatHistoryPlaceholderEmitCount += placeholderCount;
-      context.logGateway.debug(
-        `chat.history omitted oversized payloads placeholders=${placeholderCount} total=${chatHistoryPlaceholderEmitCount}`,
-      );
+    let bounded: { messages: unknown[]; placeholderCount: number };
+    if (rawContent) {
+      // Skip truncation and size caps — return full message content for clients that need it
+      bounded = { messages: sanitized, placeholderCount: 0 };
+    } else {
+      const normalized = sanitizeChatHistoryMessages(sanitized, effectiveMaxChars);
+      const maxHistoryBytes = getMaxChatHistoryMessagesBytes();
+      const perMessageHardCap = Math.min(CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES, maxHistoryBytes);
+      const replaced = replaceOversizedChatHistoryMessages({
+        messages: normalized,
+        maxSingleMessageBytes: perMessageHardCap,
+      });
+      const capped = capArrayByJsonBytes(replaced.messages, maxHistoryBytes).items;
+      bounded = enforceChatHistoryFinalBudget({ messages: capped, maxBytes: maxHistoryBytes });
+      const placeholderCount = replaced.replacedCount + bounded.placeholderCount;
+      if (placeholderCount > 0) {
+        chatHistoryPlaceholderEmitCount += placeholderCount;
+        context.logGateway.debug(
+          `chat.history omitted oversized payloads placeholders=${placeholderCount} total=${chatHistoryPlaceholderEmitCount}`,
+        );
+      }
     }
     let thinkingLevel = entry?.thinkingLevel;
     if (!thinkingLevel) {
@@ -1313,6 +1321,7 @@ export const chatHandlers: GatewayRequestHandlers = {
     respond(true, {
       sessionKey,
       sessionId,
+      label: entry?.label,
       messages: bounded.messages,
       thinkingLevel,
       fastMode: entry?.fastMode,
