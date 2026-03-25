@@ -568,7 +568,12 @@ async function finalizeCronRun(params: {
     finalAssistantVisibleText: finalRunResult.meta?.finalAssistantVisibleText,
     preferFinalAssistantVisibleText: prepared.resolvedDelivery.channel === "telegram",
   });
-  if (synthesizedText) {
+  const shouldEnqueuePending =
+    prepared.deliveryRequested ||
+    (finalRunResult.messagingToolSentTargets ?? []).some(
+      (target) => target.provider === "anthroid",
+    );
+  if (synthesizedText && shouldEnqueuePending) {
     enqueuePending(prepared.runSessionKey, {
       content: synthesizedText,
       sessionKey: prepared.runSessionKey,
