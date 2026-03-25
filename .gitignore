@@ -91,6 +91,8 @@ IDENTITY.md
 USER.md
 .tgz
 .idea
+*.local
+*.local.*
 
 # local tooling
 .serena/

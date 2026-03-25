@@ -3,8 +3,11 @@ import type { ThinkLevel } from "../../auto-reply/thinking.js";
 import type { CliDeps } from "../../cli/outbound-send-deps.js";
 import type { OpenClawConfig } from "../../config/config.js";
 import type { AgentDefaultsConfig } from "../../config/types.agent-defaults.js";
+import { enqueuePending } from "../../gateway/pending-queue.js";
+import { registerAgentRunContext } from "../../infra/agent-events.js";
+import { estimateUsageCost, resolveModelCostConfig } from "../../utils/usage-format.js";
 import { resolveCronDeliveryPlan } from "../delivery-plan.js";
-import type { CronJob, CronRunTelemetry } from "../types.js";
+import type { CronJob, CronRunOutcome, CronRunTelemetry } from "../types.js";
 import {
   dispatchCronDelivery,
   matchesMessagingToolDeliveryTarget,
@@ -565,6 +568,15 @@ async function finalizeCronRun(params: {
     finalAssistantVisibleText: finalRunResult.meta?.finalAssistantVisibleText,
     preferFinalAssistantVisibleText: prepared.resolvedDelivery.channel === "telegram",
   });
+  if (synthesizedText) {
+    enqueuePending(prepared.runSessionKey, {
+      content: synthesizedText,
+      sessionKey: prepared.runSessionKey,
+      messageId: prepared.runSessionId,
+      enqueuedAt: Date.now(),
+      source: "cron",
+    });
+  }
   const resolveRunOutcome = (result?: { delivered?: boolean; deliveryAttempted?: boolean }) =>
     prepared.withRunSession({
       status: hasFatalErrorPayload ? "error" : "ok",
