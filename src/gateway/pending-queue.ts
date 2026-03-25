@@ -4,6 +4,8 @@
  * Messages are enqueued when the gateway produces output (chat reply, cron run,
  * notification) and drained by the client via `session.drainPending` on
  * reconnect or periodic poll.
+ *
+ * Best-effort, single-instance only. Drain is destructive (no ack).
  */
 
 export interface PendingMessage {
@@ -17,10 +19,15 @@ export interface PendingMessage {
 const queues = new Map<string, PendingMessage[]>();
 
 const MAX_PER_KEY = 100;
+const MAX_CONTENT_BYTES = 32 * 1024; // 32 KB per message content
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 export function enqueuePending(key: string, msg: PendingMessage): void {
+  // Skip oversized content to prevent memory bloat
+  if (msg.content.length > MAX_CONTENT_BYTES) {
+    return;
+  }
   let queue = queues.get(key);
   if (!queue) {
     queue = [];
@@ -39,7 +46,9 @@ export function drainPending(key: string): PendingMessage[] {
     return [];
   }
   queues.delete(key);
-  return queue;
+  // Filter expired on read for deterministic TTL behavior
+  const now = Date.now();
+  return queue.filter((m) => now - m.enqueuedAt < TTL_MS);
 }
 
 function cleanupExpired(): void {

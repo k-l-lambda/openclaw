@@ -13,7 +13,12 @@ export const sessionDrainHandlers: GatewayRequestHandlers = {
     }
     const messages = drainPending(key);
     respond(true, {
-      messages: messages.map((m) => ({ content: m.content })),
+      messages: messages.map((m) => ({
+        content: m.content,
+        messageId: m.messageId,
+        source: m.source,
+        enqueuedAt: m.enqueuedAt,
+      })),
     });
   },
 };
