@@ -570,9 +570,7 @@ async function finalizeCronRun(params: {
   });
   const shouldEnqueuePending =
     prepared.deliveryRequested ||
-    (finalRunResult.messagingToolSentTargets ?? []).some(
-      (target) => target.provider === "anthroid",
-    );
+    (finalRunResult.messagingToolSentTargets ?? []).some((target) => target.provider === "webchat");
   if (synthesizedText && shouldEnqueuePending) {
     enqueuePending(prepared.runSessionKey, {
       content: synthesizedText,
