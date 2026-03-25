@@ -825,7 +825,12 @@ export async function runCronIsolatedAgentTurn(params: {
   let summary = pickSummaryFromPayloads(payloads) ?? pickSummaryFromOutput(firstText);
   let outputText = pickLastNonEmptyTextFromPayloads(payloads);
   let synthesizedText = outputText?.trim() || summary?.trim() || undefined;
-  if (synthesizedText) {
+  const shouldEnqueuePending =
+    deliveryRequested ||
+    (finalRunResult.messagingToolSentTargets ?? []).some(
+      (target) => target.provider === "anthroid",
+    );
+  if (synthesizedText && shouldEnqueuePending) {
     enqueuePending(runSessionKey, {
       content: synthesizedText,
       sessionKey: runSessionKey,
