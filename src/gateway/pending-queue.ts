@@ -65,6 +65,16 @@ export function drainPending(key: string): PendingMessage[] {
   return queue.filter((m) => now - m.enqueuedAt < TTL_MS);
 }
 
+export function drainAll(): PendingMessage[] {
+  const result: PendingMessage[] = [];
+  const now = Date.now();
+  for (const [, queue] of queues) {
+    result.push(...queue);
+  }
+  queues.clear();
+  return result.filter((m) => now - m.enqueuedAt < TTL_MS);
+}
+
 function cleanupExpired(): void {
   const now = Date.now();
   for (const [key, queue] of queues) {

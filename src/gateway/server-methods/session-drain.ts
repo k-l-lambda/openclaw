@@ -1,4 +1,4 @@
-import { drainPending } from "../pending-queue.js";
+import { drainAll, drainPending } from "../pending-queue.js";
 import { ErrorCodes, errorShape } from "../protocol/index.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
@@ -14,6 +14,19 @@ export const sessionDrainHandlers: GatewayRequestHandlers = {
     const messages = drainPending(key);
     respond(true, {
       messages: messages.map((m) => ({
+        content: m.content,
+        messageId: m.messageId,
+        source: m.source,
+        enqueuedAt: m.enqueuedAt,
+      })),
+    });
+  },
+
+  "session.drainAllPending": async ({ respond }) => {
+    const messages = drainAll();
+    respond(true, {
+      messages: messages.map((m) => ({
+        sessionKey: m.sessionKey,
         content: m.content,
         messageId: m.messageId,
         source: m.source,
