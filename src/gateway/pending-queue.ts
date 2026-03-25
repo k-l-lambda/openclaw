@@ -1,8 +1,8 @@
 /**
  * In-memory pending message queue for offline Anthroid clients.
  *
- * Messages are enqueued when the gateway produces output (chat reply, cron run,
- * notification) and drained by the client via `session.drainPending` on
+ * Messages are enqueued when the gateway produces output (chat reply, cron run)
+ * and drained by the client via `session.drainPending` on
  * reconnect or periodic poll.
  *
  * Best-effort, single-instance only. Drain is destructive (no ack).
@@ -25,13 +25,20 @@ const CLEANUP_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 export function enqueuePending(key: string, msg: PendingMessage): void {
   // Skip oversized content to prevent memory bloat
-  if (msg.content.length > MAX_CONTENT_BYTES) {
+  if (Buffer.byteLength(msg.content, "utf8") > MAX_CONTENT_BYTES) {
     return;
   }
   let queue = queues.get(key);
   if (!queue) {
     queue = [];
     queues.set(key, queue);
+  }
+  // Prune expired before push so stale items don't evict fresh ones
+  const now = Date.now();
+  if (queue.length > 0 && now - queue[0].enqueuedAt >= TTL_MS) {
+    const filtered = queue.filter((m) => now - m.enqueuedAt < TTL_MS);
+    queue.length = 0;
+    queue.push(...filtered);
   }
   queue.push(msg);
   // Enforce max size — drop oldest
