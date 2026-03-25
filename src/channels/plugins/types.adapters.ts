@@ -187,6 +187,8 @@ export type ChannelOutboundContext = {
   deps?: OutboundSendDeps;
   silent?: boolean;
   gatewayClientScopes?: readonly string[];
+  /** Stable caller-supplied key for client-side deduplication. */
+  dedupeKey?: string;
 };
 
 export type ChannelOutboundPayloadContext = ChannelOutboundContext & {

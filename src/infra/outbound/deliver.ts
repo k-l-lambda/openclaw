@@ -134,6 +134,7 @@ type ChannelHandlerParams = {
   silent?: boolean;
   mediaAccess?: OutboundMediaAccess;
   gatewayClientScopes?: readonly string[];
+  dedupeKey?: string;
 };
 
 // Channel docking: outbound delivery delegates to plugin.outbound adapters.
@@ -261,6 +262,7 @@ function createChannelOutboundContextBase(
     mediaLocalRoots: params.mediaAccess?.localRoots,
     mediaReadFile: params.mediaAccess?.readFile,
     gatewayClientScopes: params.gatewayClientScopes,
+    dedupeKey: params.dedupeKey,
   };
 }
 
@@ -287,6 +289,7 @@ type DeliverOutboundPayloadsCoreParams = {
   mirror?: DeliveryMirror;
   silent?: boolean;
   gatewayClientScopes?: readonly string[];
+  dedupeKey?: string;
 };
 
 function collectPayloadMediaSources(payloads: ReplyPayload[]): string[] {
@@ -591,6 +594,7 @@ async function deliverOutboundPayloadsCore(
     silent: params.silent,
     mediaAccess,
     gatewayClientScopes: params.gatewayClientScopes,
+    dedupeKey: params.dedupeKey,
   });
   const configuredTextLimit = handler.chunker
     ? resolveTextChunkLimit(cfg, channel, accountId, {
