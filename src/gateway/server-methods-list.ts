@@ -116,6 +116,7 @@ const BASE_METHODS = [
   "chat.send",
   "notification.push",
   "session.drainPending",
+  "session.drainAllPending",
 ];
 
 export function listGatewayMethods(): string[] {
