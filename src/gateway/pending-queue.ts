@@ -16,7 +16,14 @@ export interface PendingMessage {
   source: "chat" | "cron" | "notification";
 }
 
-const queues = new Map<string, PendingMessage[]>();
+const QUEUES_KEY = Symbol.for("openclaw.pendingQueues");
+const globalQueues = globalThis as typeof globalThis & {
+  [QUEUES_KEY]?: Map<string, PendingMessage[]>;
+};
+if (!globalQueues[QUEUES_KEY]) {
+  globalQueues[QUEUES_KEY] = new Map();
+}
+const queues: Map<string, PendingMessage[]> = globalQueues[QUEUES_KEY];
 
 const MAX_PER_KEY = 100;
 const MAX_CONTENT_BYTES = 32 * 1024; // 32 KB per message content

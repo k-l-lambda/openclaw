@@ -1,0 +1,9 @@
+{
+  "id": "anthroid",
+  "channels": ["anthroid"],
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

@@ -55,7 +55,6 @@ import { stripEnvelopeFromMessage, stripEnvelopeFromMessages } from "../chat-san
 import { augmentChatHistoryWithCliSessionImports } from "../cli-session-history.js";
 import { isSuppressedControlReplyText } from "../control-reply-text.js";
 import { ADMIN_SCOPE } from "../method-scopes.js";
-import { enqueuePending } from "../pending-queue.js";
 import {
   GATEWAY_CLIENT_CAPS,
   GATEWAY_CLIENT_MODES,
@@ -1898,34 +1897,9 @@ export const chatHandlers: GatewayRequestHandlers = {
                 sessionKey,
                 message,
               });
-              if (combinedReply) {
-                enqueuePending(sessionKey, {
-                  content: combinedReply,
-                  sessionKey,
-                  messageId: clientRunId,
-                  enqueuedAt: Date.now(),
-                  source: "chat",
-                });
-              }
             }
           } else {
             void emitUserTranscriptUpdate();
-            const combinedAgentReply = deliveredReplies
-              .filter((entry) => entry.kind === "final")
-              .map((entry) => entry.payload)
-              .map((part) => part.text?.trim() ?? "")
-              .filter(Boolean)
-              .join("\n\n")
-              .trim();
-            if (combinedAgentReply) {
-              enqueuePending(sessionKey, {
-                content: combinedAgentReply,
-                sessionKey,
-                messageId: clientRunId,
-                enqueuedAt: Date.now(),
-                source: "chat",
-              });
-            }
           }
           setGatewayDedupeEntry({
             dedupe: context.dedupe,

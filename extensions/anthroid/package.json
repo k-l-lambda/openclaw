@@ -1,0 +1,19 @@
+{
+  "name": "@openclaw/anthroid",
+  "version": "2026.3.14",
+  "description": "OpenClaw Anthroid channel plugin — pending queue delivery",
+  "type": "module",
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "anthroid",
+      "label": "Anthroid",
+      "selectionLabel": "Anthroid",
+      "docsPath": "",
+      "blurb": "In-memory pending queue for Anthroid mobile clients.",
+      "order": 90
+    }
+  }
+}
