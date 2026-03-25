@@ -1,3 +1,4 @@
+import { anthroidPlugin } from "../../../extensions/anthroid/index.js";
 import { bluebubblesPlugin } from "../../../extensions/bluebubbles/index.js";
 import { discordPlugin, setDiscordRuntime } from "../../../extensions/discord/index.js";
 import { discordSetupPlugin } from "../../../extensions/discord/setup-entry.js";
@@ -20,6 +21,7 @@ import { zaloPlugin } from "../../../extensions/zalo/index.js";
 import type { ChannelId, ChannelPlugin } from "./types.js";
 
 export const bundledChannelPlugins = [
+  anthroidPlugin,
   bluebubblesPlugin,
   discordPlugin,
   feishuPlugin,
