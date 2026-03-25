@@ -47,6 +47,7 @@ import {
   updateSessionStore,
 } from "../../config/sessions.js";
 import type { AgentDefaultsConfig } from "../../config/types.js";
+import { enqueuePending } from "../../gateway/pending-queue.js";
 import { registerAgentRunContext } from "../../infra/agent-events.js";
 import { logWarn } from "../../logger.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
@@ -824,6 +825,15 @@ export async function runCronIsolatedAgentTurn(params: {
   let summary = pickSummaryFromPayloads(payloads) ?? pickSummaryFromOutput(firstText);
   let outputText = pickLastNonEmptyTextFromPayloads(payloads);
   let synthesizedText = outputText?.trim() || summary?.trim() || undefined;
+  if (synthesizedText) {
+    enqueuePending(runSessionKey, {
+      content: synthesizedText,
+      sessionKey: runSessionKey,
+      messageId: runSessionId,
+      enqueuedAt: Date.now(),
+      source: "cron",
+    });
+  }
   const deliveryPayload = pickLastDeliverablePayload(payloads);
   let deliveryPayloads =
     deliveryPayload !== undefined

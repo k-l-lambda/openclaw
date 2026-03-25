@@ -38,6 +38,7 @@ import {
 import { type ChatImageContent, parseMessageWithAttachments } from "../chat-attachments.js";
 import { stripEnvelopeFromMessage, stripEnvelopeFromMessages } from "../chat-sanitize.js";
 import { ADMIN_SCOPE } from "../method-scopes.js";
+import { enqueuePending } from "../pending-queue.js";
 import {
   GATEWAY_CLIENT_CAPS,
   GATEWAY_CLIENT_MODES,
@@ -1638,6 +1639,15 @@ export const chatHandlers: GatewayRequestHandlers = {
                 sessionKey: rawSessionKey,
                 message,
               });
+              if (combinedReply) {
+                enqueuePending(rawSessionKey, {
+                  content: combinedReply,
+                  sessionKey: rawSessionKey,
+                  messageId: clientRunId,
+                  enqueuedAt: Date.now(),
+                  source: "chat",
+                });
+              }
             }
           } else {
             void emitUserTranscriptUpdate();
