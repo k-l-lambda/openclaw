@@ -1899,9 +1899,9 @@ export const chatHandlers: GatewayRequestHandlers = {
                 message,
               });
               if (combinedReply) {
-                enqueuePending(rawSessionKey, {
+                enqueuePending(sessionKey, {
                   content: combinedReply,
-                  sessionKey: rawSessionKey,
+                  sessionKey,
                   messageId: clientRunId,
                   enqueuedAt: Date.now(),
                   source: "chat",
@@ -1910,6 +1910,22 @@ export const chatHandlers: GatewayRequestHandlers = {
             }
           } else {
             void emitUserTranscriptUpdate();
+            const combinedAgentReply = deliveredReplies
+              .filter((entry) => entry.kind === "final")
+              .map((entry) => entry.payload)
+              .map((part) => part.text?.trim() ?? "")
+              .filter(Boolean)
+              .join("\n\n")
+              .trim();
+            if (combinedAgentReply) {
+              enqueuePending(sessionKey, {
+                content: combinedAgentReply,
+                sessionKey,
+                messageId: clientRunId,
+                enqueuedAt: Date.now(),
+                source: "chat",
+              });
+            }
           }
           setGatewayDedupeEntry({
             dedupe: context.dedupe,
