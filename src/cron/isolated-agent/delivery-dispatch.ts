@@ -401,6 +401,7 @@ export async function dispatchCronDelivery(
           identity,
           bestEffort: params.deliveryBestEffort,
           deps: createOutboundSendDeps(params.deps),
+          dedupeKey: params.runSessionId,
           abortSignal: params.abortSignal,
           // Isolated cron direct delivery uses its own transient retry loop.
           // Keep all attempts out of the write-ahead delivery queue so a

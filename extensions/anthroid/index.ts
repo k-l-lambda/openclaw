@@ -71,16 +71,17 @@ export const anthroidPlugin: ChannelPlugin<AnthroidAccount> = {
     },
     async sendText(ctx) {
       const sessionKey = ctx.to;
+      const messageId = ctx.dedupeKey ?? crypto.randomUUID();
       enqueuePending(sessionKey, {
         content: ctx.text,
         sessionKey,
-        messageId: crypto.randomUUID(),
+        messageId,
         enqueuedAt: Date.now(),
         source: "notification",
       });
       return {
         channel: "anthroid",
-        messageId: crypto.randomUUID(),
+        messageId,
       };
     },
   },

@@ -140,6 +140,8 @@ export type ChannelOutboundContext = {
   identity?: OutboundIdentity;
   deps?: OutboundSendDeps;
   silent?: boolean;
+  /** Stable caller-supplied key for client-side deduplication. */
+  dedupeKey?: string;
 };
 
 export type ChannelOutboundPayloadContext = ChannelOutboundContext & {
