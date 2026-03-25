@@ -827,9 +827,7 @@ export async function runCronIsolatedAgentTurn(params: {
   let synthesizedText = outputText?.trim() || summary?.trim() || undefined;
   const shouldEnqueuePending =
     deliveryRequested ||
-    (finalRunResult.messagingToolSentTargets ?? []).some(
-      (target) => target.provider === "anthroid",
-    );
+    (finalRunResult.messagingToolSentTargets ?? []).some((target) => target.provider === "webchat");
   if (synthesizedText && shouldEnqueuePending) {
     enqueuePending(runSessionKey, {
       content: synthesizedText,
