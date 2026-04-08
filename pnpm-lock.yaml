@@ -361,6 +361,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
 
+  extensions/anthroid: {}
+
   extensions/anthropic:
     devDependencies:
       '@openclaw/plugin-sdk':
