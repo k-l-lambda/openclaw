@@ -185,4 +185,8 @@ export default defineConfig([
       neverBundle: shouldNeverBundleDependency,
     },
   }),
+  nodeBuildConfig({
+    // Standalone MCP server binary — bundle all deps for portability.
+    entry: { "mcp-server": "src/mcp-server/index.ts" },
+  }),
 ]);
