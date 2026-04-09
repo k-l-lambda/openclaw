@@ -272,6 +272,22 @@ export function resolveCronSession(params: {
       ? { hookExternalContentSource: params.hookExternalContentSource }
       : {}),
     systemSent,
+    // When starting a fresh session (forceNew / isolated), clear delivery routing
+    // state inherited from prior sessions. Without this, lastThreadId leaks into
+    // the new session and causes announce-mode cron deliveries to post as thread
+    // replies instead of channel top-level messages.
+    // deliveryContext must also be cleared because normalizeSessionEntryDelivery
+    // repopulates lastThreadId from deliveryContext.threadId on store writes.
+    ...(isNewSession && {
+      lastChannel: undefined,
+      lastTo: undefined,
+      lastAccountId: undefined,
+      lastThreadId: undefined,
+      deliveryContext: undefined,
+      // Clear stale sessionFile so the runner creates a fresh transcript file
+      // for the new sessionId instead of appending to the old accumulated one.
+      sessionFile: undefined,
+    }),
   };
   if (resetBoundaryPending) {
     clearAllCliSessions(sessionEntry);
