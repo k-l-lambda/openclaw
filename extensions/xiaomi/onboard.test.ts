@@ -10,7 +10,7 @@ describe("xiaomi onboard", () => {
       baseUrl: "https://api.xiaomimimo.com/v1",
       api: "openai-completions",
     });
-    expect(cfg.models?.providers?.xiaomi?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.xiaomi?.models?.map((m) => m.id)).toEqual([
       "mimo-v2-flash",
       "mimo-v2-pro",
       "mimo-v2-omni",
@@ -31,7 +31,7 @@ describe("xiaomi onboard", () => {
     expect(cfg.models?.providers?.xiaomi?.baseUrl).toBe("https://api.xiaomimimo.com/v1");
     expect(cfg.models?.providers?.xiaomi?.api).toBe("openai-completions");
     expect(cfg.models?.providers?.xiaomi?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.xiaomi?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.xiaomi?.models?.map((m) => m.id)).toEqual([
       "custom-model",
       "mimo-v2-flash",
       "mimo-v2-pro",

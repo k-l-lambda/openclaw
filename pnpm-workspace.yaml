@@ -4,7 +4,7 @@ packages:
   - packages/*
   - extensions/*
 
-minimumReleaseAge: 2880
+minimumReleaseAge: 0
 
 minimumReleaseAgeExclude:
   - "acpx"
@@ -22,6 +22,8 @@ minimumReleaseAgeExclude:
   - "@rolldown/*"
   - "@oxlint/*"
   - "@oxfmt/*"
+  - "@pierre/diffs"
+  - "@vitest/*"
   - "axios@1.15.0"
   - "discord-api-types"
   - "rolldown"

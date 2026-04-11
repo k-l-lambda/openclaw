@@ -25,7 +25,7 @@ function enqueuePending(key: string, msg: PendingMessage): void {
   if (!g[QUEUES_KEY]) {
     g[QUEUES_KEY] = new Map();
   }
-  const queues = g[QUEUES_KEY]!;
+  const queues = g[QUEUES_KEY];
   let queue = queues.get(key);
   if (!queue) {
     queue = [];

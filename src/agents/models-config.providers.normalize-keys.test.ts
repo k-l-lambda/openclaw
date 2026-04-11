@@ -17,7 +17,9 @@ vi.mock("./models-config.providers.policy.runtime.js", () => ({
 describe("normalizeProviders", () => {
   const createModel = (
     overrides: Partial<
-      NonNullable<NonNullable<OpenClawConfig["models"]>["providers"]>[string]["models"][number]
+      NonNullable<
+        NonNullable<NonNullable<OpenClawConfig["models"]>["providers"]>[string]["models"]
+      >[number]
     > = {},
   ) => ({
     id: "config-model",

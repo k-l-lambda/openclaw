@@ -5,7 +5,11 @@ import path from "node:path";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-import { listAgentIds, resolveAgentConfig, resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
+import {
+  listAgentIds,
+  resolveAgentConfig,
+  resolveAgentWorkspaceDir,
+} from "../../agents/agent-scope.js";
 import type { AgentInternalEvent } from "../../agents/internal-events.js";
 import {
   normalizeSpawnedRunMetadata,
@@ -970,13 +974,14 @@ export const agentHandlers: GatewayRequestHandlers = {
       }
     };
 
-    const [agentsContent, memoryContent, userContent, identityContent, soulContent] = await Promise.all([
-      readFile("AGENTS.md"),
-      readFile("MEMORY.md"),
-      readFile("USER.md"),
-      readFile("IDENTITY.md"),
-      readFile("SOUL.md"),
-    ]);
+    const [agentsContent, memoryContent, userContent, identityContent, soulContent] =
+      await Promise.all([
+        readFile("AGENTS.md"),
+        readFile("MEMORY.md"),
+        readFile("USER.md"),
+        readFile("IDENTITY.md"),
+        readFile("SOUL.md"),
+      ]);
 
     respond(
       true,
@@ -997,9 +1002,12 @@ export const agentHandlers: GatewayRequestHandlers = {
   "agent.getMemoryPatch": async ({ params, respond }) => {
     // Returns git diff patch for workspace/memory/ since a given timestamp.
     // Params: { agentId?, sinceTimestamp? (ISO string or epoch ms) }
-    const p = params as Record<string, unknown>;
+    const p = params;
     const cfg = loadConfig();
-    const identity = resolveAssistantIdentity({ cfg, agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined });
+    const identity = resolveAssistantIdentity({
+      cfg,
+      agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined,
+    });
     const workspaceDir = resolveAgentWorkspaceDir(cfg, identity.agentId);
     const memoryDir = path.join(workspaceDir, "memory");
 
@@ -1020,7 +1028,11 @@ export const agentHandlers: GatewayRequestHandlers = {
       let baseCommit: string;
       if (sinceDate) {
         try {
-          const { stdout } = await execFileAsync("git", ["log", `--before=${sinceDate}`, "--format=%H", "-1", "--", "memory/"], gitOpts);
+          const { stdout } = await execFileAsync(
+            "git",
+            ["log", `--before=${sinceDate}`, "--format=%H", "-1", "--", "memory/"],
+            gitOpts,
+          );
           baseCommit = stdout.trim();
         } catch {
           baseCommit = "";
@@ -1032,7 +1044,11 @@ export const agentHandlers: GatewayRequestHandlers = {
       // Generate diff
       let patch: string;
       if (baseCommit) {
-        const { stdout } = await execFileAsync("git", ["diff", baseCommit, "HEAD", "--", "memory/"], gitOpts);
+        const { stdout } = await execFileAsync(
+          "git",
+          ["diff", baseCommit, "HEAD", "--", "memory/"],
+          gitOpts,
+        );
         patch = stdout;
       } else {
         // No base commit — return full content of all memory/ files as a "full sync" response
@@ -1056,24 +1072,37 @@ export const agentHandlers: GatewayRequestHandlers = {
       // Get latest commit timestamp
       let latestTimestamp = Date.now();
       try {
-        const { stdout } = await execFileAsync("git", ["log", "-1", "--format=%ct", "--", "memory/"], gitOpts);
+        const { stdout } = await execFileAsync(
+          "git",
+          ["log", "-1", "--format=%ct", "--", "memory/"],
+          gitOpts,
+        );
         const epoch = parseInt(stdout.trim(), 10);
-        if (!isNaN(epoch)) latestTimestamp = epoch * 1000;
+        if (!isNaN(epoch)) {
+          latestTimestamp = epoch * 1000;
+        }
       } catch {
         // Use current time
       }
 
       respond(true, { mode: "patch", patch, latestTimestamp }, undefined);
     } catch (err) {
-      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, `getMemoryPatch failed: ${String(err)}`));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, `getMemoryPatch failed: ${String(err)}`),
+      );
     }
   },
   "agent.applyMemoryPatch": async ({ params, respond }) => {
     // Applies a git patch or full file set to workspace/memory/.
     // Params: { agentId?, mode: "patch"|"full", patch?: string, files?: Record<string,string> }
-    const p = params as Record<string, unknown>;
+    const p = params;
     const cfg = loadConfig();
-    const identity = resolveAssistantIdentity({ cfg, agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined });
+    const identity = resolveAssistantIdentity({
+      cfg,
+      agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined,
+    });
     const workspaceDir = resolveAgentWorkspaceDir(cfg, identity.agentId);
     const memoryDir = path.join(workspaceDir, "memory");
     const gitOpts = { cwd: workspaceDir, timeout: 10_000 };
@@ -1094,8 +1123,14 @@ export const agentHandlers: GatewayRequestHandlers = {
             await fs.unlink(tmpPatch).catch(() => {});
           }
         } catch (applyErr) {
-          respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST,
-            `Patch apply failed (conflict?): ${String(applyErr)}. Please resolve manually.`));
+          respond(
+            false,
+            undefined,
+            errorShape(
+              ErrorCodes.INVALID_REQUEST,
+              `Patch apply failed (conflict?): ${String(applyErr)}. Please resolve manually.`,
+            ),
+          );
           return;
         }
       } else if (mode === "full" && p.files && typeof p.files === "object") {
@@ -1104,29 +1139,47 @@ export const agentHandlers: GatewayRequestHandlers = {
         const files = p.files as Record<string, string>;
         const resolvedMemoryDir = path.resolve(memoryDir) + path.sep;
         for (const [name, content] of Object.entries(files)) {
-          if (typeof content !== "string" || !name.endsWith(".md")) continue;
+          if (typeof content !== "string" || !name.endsWith(".md")) {
+            continue;
+          }
           // Path traversal guard: reject names with path separators or ".."
-          if (/[/\\]/.test(name) || name.includes("..") || !path.resolve(memoryDir, name).startsWith(resolvedMemoryDir)) {
+          if (
+            /[/\\]/.test(name) ||
+            name.includes("..") ||
+            !path.resolve(memoryDir, name).startsWith(resolvedMemoryDir)
+          ) {
             continue;
           }
           await fs.writeFile(path.join(memoryDir, name), content, "utf-8");
         }
       } else {
-        respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, "Invalid mode or missing data"));
+        respond(
+          false,
+          undefined,
+          errorShape(ErrorCodes.INVALID_REQUEST, "Invalid mode or missing data"),
+        );
         return;
       }
 
       // Git add + commit
       try {
         await execFileAsync("git", ["add", "memory/"], gitOpts);
-        await execFileAsync("git", ["commit", "-m", "anthroid memory sync", "--allow-empty"], gitOpts);
+        await execFileAsync(
+          "git",
+          ["commit", "-m", "anthroid memory sync", "--allow-empty"],
+          gitOpts,
+        );
       } catch {
         // Commit may fail if nothing changed — that's ok
       }
 
       respond(true, { ok: true, timestamp: Date.now() }, undefined);
     } catch (err) {
-      respond(false, undefined, errorShape(ErrorCodes.UNAVAILABLE, `applyMemoryPatch failed: ${String(err)}`));
+      respond(
+        false,
+        undefined,
+        errorShape(ErrorCodes.UNAVAILABLE, `applyMemoryPatch failed: ${String(err)}`),
+      );
     }
   },
   "agent.wait": async ({ params, respond, context }) => {

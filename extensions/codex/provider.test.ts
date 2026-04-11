@@ -64,7 +64,7 @@ describe("codex provider", () => {
     });
 
     expect(listModels).not.toHaveBeenCalled();
-    expect(result.provider.models.map((model) => model.id)).toEqual([
+    expect(result.provider.models?.map((model) => model.id)).toEqual([
       "gpt-5.4",
       "gpt-5.4-mini",
       "gpt-5.2",
@@ -80,7 +80,7 @@ describe("codex provider", () => {
     });
 
     expect(listModels).not.toHaveBeenCalled();
-    expect(result.provider.models.map((model) => model.id)).toEqual([
+    expect(result.provider.models?.map((model) => model.id)).toEqual([
       "gpt-5.4",
       "gpt-5.4-mini",
       "gpt-5.2",

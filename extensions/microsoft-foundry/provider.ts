@@ -30,7 +30,7 @@ export function buildMicrosoftFoundryProvider(): ProviderPlugin {
         return;
       }
       const selectedModelId = ctx.model.slice(`${PROVIDER_ID}/`.length);
-      const existingModel = providerConfig.models.find(
+      const existingModel = (providerConfig.models ?? []).find(
         (model: { id: string }) => model.id === selectedModelId,
       );
       const selectedModelCapabilities = resolveFoundryModelCapabilities(
@@ -45,7 +45,7 @@ export function buildMicrosoftFoundryProvider(): ProviderPlugin {
       const selectedModelApi = isFoundryProviderApi(existingModel?.api)
         ? existingModel.api
         : providerConfig.api;
-      const nextModels = providerConfig.models.map((model) =>
+      const nextModels = (providerConfig.models ?? []).map((model) =>
         model.id === selectedModelId
           ? {
               ...model,

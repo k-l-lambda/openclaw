@@ -22,7 +22,7 @@ describe("minimax onboard", () => {
 
   it("keeps reasoning enabled for MiniMax-M2.7", () => {
     const cfg = applyMinimaxApiConfig({}, "MiniMax-M2.7");
-    expect(cfg.models?.providers?.minimax?.models[0]?.reasoning).toBe(true);
+    expect(cfg.models?.providers?.minimax?.models?.[0]?.reasoning).toBe(true);
   });
 
   it("preserves existing model params when adding alias", () => {
@@ -58,7 +58,7 @@ describe("minimax onboard", () => {
     expect(cfg.models?.providers?.minimax?.api).toBe("anthropic-messages");
     expect(cfg.models?.providers?.minimax?.authHeader).toBe(true);
     expect(cfg.models?.providers?.minimax?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.minimax?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.minimax?.models?.map((m) => m.id)).toEqual([
       "old-model",
       "MiniMax-M2.7",
     ]);

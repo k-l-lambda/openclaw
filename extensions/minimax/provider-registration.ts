@@ -93,7 +93,7 @@ function resolvePortalCatalog(ctx: ProviderCatalogContext) {
 
   return {
     provider: buildPortalProviderCatalog({
-      baseUrl: explicitBaseUrl || buildMinimaxPortalProvider(ctx.env).baseUrl,
+      baseUrl: (explicitBaseUrl || buildMinimaxPortalProvider(ctx.env).baseUrl) ?? "",
       apiKey,
     }),
   };

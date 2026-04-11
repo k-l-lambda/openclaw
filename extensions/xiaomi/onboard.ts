@@ -13,7 +13,7 @@ const xiaomiPresetAppliers = createDefaultModelsPresetAppliers({
     return {
       providerId: "xiaomi",
       api: defaultProvider.api ?? "openai-completions",
-      baseUrl: defaultProvider.baseUrl,
+      baseUrl: defaultProvider.baseUrl ?? "",
       defaultModels: defaultProvider.models ?? [],
       defaultModelId: XIAOMI_DEFAULT_MODEL_ID,
       aliases: [{ modelRef: XIAOMI_DEFAULT_MODEL_REF, alias: "Xiaomi" }],

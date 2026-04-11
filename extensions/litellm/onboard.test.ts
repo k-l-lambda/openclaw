@@ -18,7 +18,7 @@ describe("litellm onboard", () => {
     expect(cfg.models?.providers?.litellm?.baseUrl).toBe("https://litellm.example/v1");
     expect(cfg.models?.providers?.litellm?.api).toBe("openai-completions");
     expect(cfg.models?.providers?.litellm?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.litellm?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.litellm?.models?.map((m) => m.id)).toEqual([
       "custom-model",
       "claude-opus-4-6",
     ]);

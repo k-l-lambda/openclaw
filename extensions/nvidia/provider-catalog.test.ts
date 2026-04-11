@@ -7,7 +7,7 @@ describe("nvidia provider catalog", () => {
 
     expect(provider.baseUrl).toBe("https://integrate.api.nvidia.com/v1");
     expect(provider.api).toBe("openai-completions");
-    expect(provider.models.map((model) => model.id)).toEqual([
+    expect(provider.models?.map((model) => model.id)).toEqual([
       "nvidia/nemotron-3-super-120b-a12b",
       "moonshotai/kimi-k2.5",
       "minimaxai/minimax-m2.5",

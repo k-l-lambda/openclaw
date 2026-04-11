@@ -30,7 +30,7 @@ describe("synthetic onboard", () => {
     expect(cfg.models?.providers?.synthetic?.baseUrl).toBe("https://api.synthetic.new/anthropic");
     expect(cfg.models?.providers?.synthetic?.api).toBe("anthropic-messages");
     expect(cfg.models?.providers?.synthetic?.apiKey).toBe("old-key");
-    const ids = cfg.models?.providers?.synthetic?.models.map((m) => m.id);
+    const ids = cfg.models?.providers?.synthetic?.models?.map((m) => m.id);
     expect(ids).toContain("old-model");
     expect(ids).toContain(SYNTHETIC_DEFAULT_MODEL_REF.replace(/^synthetic\//, ""));
   });

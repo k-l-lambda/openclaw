@@ -40,11 +40,11 @@ describe("mistral onboard", () => {
     expect(cfg.models?.providers?.mistral?.baseUrl).toBe("https://api.mistral.ai/v1");
     expect(cfg.models?.providers?.mistral?.api).toBe("openai-completions");
     expect(cfg.models?.providers?.mistral?.apiKey).toBe("old-key");
-    expect(cfg.models?.providers?.mistral?.models.map((m) => m.id)).toEqual([
+    expect(cfg.models?.providers?.mistral?.models?.map((m) => m.id)).toEqual([
       "custom-model",
       "mistral-large-latest",
     ]);
-    const mistralDefault = cfg.models?.providers?.mistral?.models.find(
+    const mistralDefault = cfg.models?.providers?.mistral?.models?.find(
       (model) => model.id === "mistral-large-latest",
     );
     expect(mistralDefault?.contextWindow).toBe(262144);
@@ -54,7 +54,7 @@ describe("mistral onboard", () => {
   it("uses the bundled mistral default model definition", () => {
     const bundled = buildBundledMistralModelDefinition();
     const cfg = applyMistralProviderConfig({});
-    const defaultModel = cfg.models?.providers?.mistral?.models.find(
+    const defaultModel = cfg.models?.providers?.mistral?.models?.find(
       (model) => model.id === bundled.id,
     );
 
