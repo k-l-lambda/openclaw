@@ -113,8 +113,28 @@ export function readSessionMessages(
       const parsed = JSON.parse(line);
       if (parsed?.message) {
         messageSeq += 1;
+        // Merge outer envelope timestamp into message if the inner message lacks one.
+        // Claude Code CLI transcripts store timestamp at the outer level; web-chat
+        // messages store it inside the message object.
+        const msg =
+          parsed.message &&
+          typeof parsed.message === "object" &&
+          !Array.isArray(parsed.message) &&
+          typeof (parsed.message as Record<string, unknown>).timestamp !== "number"
+            ? (() => {
+                const outerTs =
+                  typeof parsed.timestamp === "number"
+                    ? parsed.timestamp
+                    : typeof parsed.timestamp === "string"
+                      ? Date.parse(parsed.timestamp)
+                      : Number.NaN;
+                return Number.isFinite(outerTs)
+                  ? { ...(parsed.message as Record<string, unknown>), timestamp: outerTs }
+                  : parsed.message;
+              })()
+            : parsed.message;
         messages.push(
-          attachOpenClawTranscriptMeta(parsed.message, {
+          attachOpenClawTranscriptMeta(msg, {
             ...(typeof parsed.id === "string" ? { id: parsed.id } : {}),
             seq: messageSeq,
           }),
