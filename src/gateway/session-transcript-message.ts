@@ -127,7 +127,19 @@ export function projectTranscriptEntryMessage(
           ? record.timestamp
           : Number.NaN;
     const idempotencyKey = readTranscriptMessageIdempotencyKey(record.message);
-    return attachOpenClawTranscriptMeta(record.message, {
+    // Claude Code CLI transcripts carry the timestamp on the outer JSONL
+    // envelope, while web-chat messages carry it inside the inner message.
+    // Preserve the envelope timestamp when the inner message lacks its own, so
+    // downstream consumers keep a stable per-message time.
+    const message =
+      record.message &&
+      typeof record.message === "object" &&
+      !Array.isArray(record.message) &&
+      typeof (record.message as Record<string, unknown>).timestamp !== "number" &&
+      Number.isFinite(recordTimestampMs)
+        ? { ...(record.message as Record<string, unknown>), timestamp: recordTimestampMs }
+        : record.message;
+    return attachOpenClawTranscriptMeta(message, {
       ...(typeof record.id === "string" ? { id: record.id } : {}),
       ...(idempotencyKey ? { idempotencyKey } : {}),
       ...(Number.isFinite(recordTimestampMs) ? { recordTimestampMs } : {}),
