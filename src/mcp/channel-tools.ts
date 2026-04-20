@@ -179,6 +179,24 @@ export function registerChannelMcpTools(server: McpServer, bridge: OpenClawChann
   );
 
   server.tool(
+    "session_message_send",
+    "Send a message to a session by key, creating a new conversation if it doesn't exist yet. " +
+      "Use this to contact an agent when no prior conversation is in the list (e.g. after a gateway restart). " +
+      "Session key format: agent:<agentId>:<key>, e.g. 'agent:main:main'.",
+    {
+      session_key: z.string().min(1),
+      text: z.string().min(1),
+    },
+    async ({ session_key, text }) => {
+      const result = await bridge.sendMessageToSession({ sessionKey: session_key, text });
+      return {
+        content: [{ type: "text", text: "sent" }],
+        structuredContent: { result },
+      };
+    },
+  );
+
+  server.tool(
     "permissions_list_open",
     "List open OpenClaw exec or plugin approval requests visible through the Gateway.",
     {},
