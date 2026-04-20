@@ -279,6 +279,18 @@ export class OpenClawChannelBridge {
     });
   }
 
+  async sendMessageToSession(params: {
+    sessionKey: string;
+    text: string;
+  }): Promise<Record<string, unknown>> {
+    await this.waitUntilReady();
+    return await this.requestGateway("chat.send", {
+      sessionKey: params.sessionKey,
+      message: params.text,
+      idempotencyKey: randomUUID(),
+    });
+  }
+
   listPendingApprovals(): PendingApproval[] {
     this.sweepPendingExpired();
     return [...this.pendingApprovals.values()]
