@@ -1,3 +1,5 @@
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import type { ThinkLevel } from "../../../auto-reply/thinking.js";
 import { formatErrorMessage } from "../../../infra/errors.js";
 import type { Model } from "../../../llm/types.js";
@@ -638,11 +640,46 @@ export function createEmbeddedRunAuthController(params: {
     }
   };
 
+  const execFileAsync = promisify(execFile);
+
+  const maybeRotateApiKeyForAuthError = async (
+    errorText: string,
+    retried: boolean,
+  ): Promise<boolean> => {
+    if (retried) {
+      return false;
+    }
+    if (classifyFailoverReason(errorText, { provider: params.provider }) !== "auth") {
+      return false;
+    }
+    const providerName = state.models.runtime.provider;
+    const on401Script = params.config?.models?.providers?.[providerName]?.on401Script;
+    if (!on401Script) {
+      return false;
+    }
+    const currentKey = state.apiKeyInfo?.apiKey ?? "";
+    try {
+      const { stdout } = await execFileAsync(on401Script, currentKey ? [currentKey] : [], {
+        timeout: 10_000,
+      });
+      const newKey = stdout.trim();
+      if (newKey && newKey !== currentKey) {
+        params.authStorage.setRuntimeApiKey(providerName, newKey);
+        params.log.info(`[on401] Rotated API key for provider "${providerName}"`);
+        return true;
+      }
+    } catch (err) {
+      params.log.warn(`[on401] Key rotation script failed: ${formatErrorMessage(err)}`);
+    }
+    return false;
+  };
+
   return {
     applyAuthProfileCandidate: applyApiKeyInfo,
     advanceAuthProfile,
     initializeAuthProfile,
     maybeRefreshRuntimeAuthForAuthError,
+    maybeRotateApiKeyForAuthError,
     stopRuntimeAuthRefreshTimer,
   };
 }

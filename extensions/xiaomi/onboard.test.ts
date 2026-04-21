@@ -35,7 +35,7 @@ describe("xiaomi onboard", () => {
       legacyModelId: "custom-model",
       legacyModelName: "Custom",
     });
-    expect(provider?.models.map((m) => m.id)).toEqual([
+    expect(provider?.models?.map((m) => m.id)).toEqual([
       "custom-model",
       "mimo-v2.6-pro",
       "mimo-v2.6-flash",

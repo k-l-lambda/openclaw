@@ -21,6 +21,7 @@ import { isTimeoutError, resolveFailoverReasonFromError } from "../agents/failov
 import { renderCodexAppServerFailureCopy } from "../agents/failover/user-copy.js";
 import { readToolValidationErrorSummary } from "../agents/tool-error-summary.js";
 import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS, stripHeartbeatToken } from "../auto-reply/heartbeat.js";
+import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import { normalizeVerboseLevel } from "../auto-reply/thinking.js";
 import { normalizeAgentPlanSteps } from "../channels/streaming.js";
 import { getRuntimeConfig } from "../config/io.js";
@@ -734,6 +735,15 @@ export function createAgentEventHandler({
     });
   };
 
+  // A bare HEARTBEAT_OK ack or NO_REPLY token is never user-visible chat output,
+  // even when the run itself is not flagged as a heartbeat.
+  const isSilentOrHeartbeatOnlyText = (text: string) =>
+    isSilentReplyText(text, SILENT_REPLY_TOKEN) ||
+    stripHeartbeatToken(text, {
+      mode: "heartbeat",
+      maxAckChars: DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
+    }).shouldSkip;
+
   const broadcastBufferedChatDelta = (
     delivery: ChatDelivery,
     heartbeatForFilter = delivery.isHeartbeat,
@@ -742,7 +752,7 @@ export function createAgentEventHandler({
     const { text, suppress } = chatRunState.resolveBuffer(clientRunId);
     if (!shouldHideHeartbeatChatOutput(clientRunId, sourceRunId, heartbeatForFilter)) {
       // Suppression retracts a prior visible snapshot; omission would leave stale text.
-      broadcastChatDelta(delivery, suppress ? "" : text);
+      broadcastChatDelta(delivery, suppress || isSilentOrHeartbeatOnlyText(text) ? "" : text);
     }
   };
 
@@ -892,7 +902,9 @@ export function createAgentEventHandler({
     });
     const text = projected.text.trim();
     const shouldSuppressSilent =
-      normalizedHeartbeatText.suppress || (projected.suppress && !terminalBuffer.displayText);
+      normalizedHeartbeatText.suppress ||
+      (projected.suppress && !terminalBuffer.displayText) ||
+      (Boolean(text) && isSilentOrHeartbeatOnlyText(text));
     const hasDisplayContent = Boolean(text || terminalBuffer.displayText);
     // Flush any paced delta so streaming clients receive the complete text
     // before the final event.

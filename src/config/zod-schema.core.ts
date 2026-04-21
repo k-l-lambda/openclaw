@@ -350,6 +350,8 @@ const ModelProviderSchema = z.strictObject({
   /** Provider request transport/retry overrides. */
   request: ConfiguredModelProviderRequestSchema,
   models: z.array(ModelDefinitionSchema).optional(),
+  /** Script run on HTTP 401: receives the current API key as $1 and prints the new key. */
+  on401Script: z.string().optional(),
 });
 
 const ModelProvidersSchema = z

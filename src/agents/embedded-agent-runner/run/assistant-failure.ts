@@ -66,6 +66,7 @@ export async function handleEmbeddedAssistantFailure(input: {
     | "attemptedThinking"
     | "attemptAuthProfileStore"
     | "maybeRefreshRuntimeAuthForAuthError"
+    | "maybeRotateApiKeyForAuthError"
   > & { model: Pick<PreparedRuntime["model"], "id"> };
   normalizedAttempt: Pick<
     NormalizedEmbeddedRunAttempt,
@@ -247,10 +248,14 @@ export async function handleEmbeddedAssistantFailure(input: {
   if (
     !signalOwnedInterruption &&
     authFailure &&
-    (await preparedRuntime.maybeRefreshRuntimeAuthForAuthError(
+    ((await preparedRuntime.maybeRefreshRuntimeAuthForAuthError(
       failedAssistant?.errorMessage ?? "",
       input.runtimeAuthRetry,
-    ))
+    )) ||
+      (await preparedRuntime.maybeRotateApiKeyForAuthError(
+        failedAssistant?.errorMessage ?? "",
+        input.runtimeAuthRetry,
+      )))
   ) {
     return buildOutcome(input, {
       action: "retry",

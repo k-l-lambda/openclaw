@@ -59,6 +59,7 @@ export async function handleEmbeddedPromptFailure(input: {
     | "modelId"
     | "attemptAuthProfileStore"
     | "maybeRefreshRuntimeAuthForAuthError"
+    | "maybeRotateApiKeyForAuthError"
     | "attemptedThinking"
   >;
   normalizedAttempt: Pick<
@@ -154,7 +155,8 @@ export async function handleEmbeddedPromptFailure(input: {
   const recordedTerminalStop = isCliTerminalStopCode(promptErrorDetails.code);
   if (
     !recordedTerminalStop &&
-    (await preparedRuntime.maybeRefreshRuntimeAuthForAuthError(errorText, input.runtimeAuthRetry))
+    ((await preparedRuntime.maybeRefreshRuntimeAuthForAuthError(errorText, input.runtimeAuthRetry)) ||
+      (await preparedRuntime.maybeRotateApiKeyForAuthError(errorText, input.runtimeAuthRetry)))
   ) {
     return {
       action: "retry",
