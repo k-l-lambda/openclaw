@@ -540,6 +540,7 @@ export async function prepareEmbeddedRunRuntime(input: {
     attemptedThinking,
     advanceAttemptAuthProfile,
     maybeRefreshRuntimeAuthForAuthError: authController.maybeRefreshRuntimeAuthForAuthError,
+    maybeRotateApiKeyForAuthError: authController.maybeRotateApiKeyForAuthError,
     stopRuntimeAuthRefreshTimer: authController.stopRuntimeAuthRefreshTimer,
     getApiKeyInfo: () => authState.apiKeyInfo,
     setThinkLevel: (next: ThinkLevel) => {

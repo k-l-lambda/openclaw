@@ -204,7 +204,7 @@ describe("buildQaGatewayConfig", () => {
     expect(cfg.models?.providers?.anthropic?.api).toBe("anthropic-messages");
     expect(cfg.models?.providers?.anthropic?.baseUrl).toBe("http://127.0.0.1:44080");
     expect(cfg.models?.providers?.anthropic?.request).toEqual({ allowPrivateNetwork: true });
-    expect(cfg.models?.providers?.anthropic?.models.map((model) => model.id)).toContain(
+    expect(cfg.models?.providers?.anthropic?.models?.map((model) => model.id)).toContain(
       "claude-opus-4-8",
     );
     expect(cfg.plugins?.allow).toEqual(["memory-core", "qa-lab"]);

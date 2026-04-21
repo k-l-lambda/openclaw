@@ -25,7 +25,7 @@ describe("minimax onboard", () => {
 
   it("keeps reasoning enabled for MiniMax-M3", () => {
     const cfg = applyMinimaxApiConfig({}, "MiniMax-M3");
-    expect(cfg.models?.providers?.minimax?.models[0]?.reasoning).toBe(true);
+    expect(cfg.models?.providers?.minimax?.models?.[0]?.reasoning).toBe(true);
   });
 
   it("keeps MiniMax chat models text-only so image tools use MiniMax-VL-01", () => {
@@ -74,7 +74,7 @@ describe("minimax onboard", () => {
       legacyApi: "openai-completions",
     });
     expect(provider?.authHeader).toBe(true);
-    expect(provider?.models.map((m) => m.id)).toEqual(["old-model", "MiniMax-M3"]);
+    expect(provider?.models?.map((m) => m.id)).toEqual(["old-model", "MiniMax-M3"]);
   });
 
   it("drops placeholder apiKey while preserving provider timeout", () => {

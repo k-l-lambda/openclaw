@@ -439,6 +439,7 @@ export async function recoverEmbeddedRunAttempt(input: {
       suspensionSessionId: sessionPromptState.sessionId ?? params.sessionId,
       runtimeAuthRetry: input.runtimeAuthRetry,
       maybeRefreshRuntimeAuthForAuthError: preparedRuntime.maybeRefreshRuntimeAuthForAuthError,
+      maybeRotateApiKeyForAuthError: preparedRuntime.maybeRotateApiKeyForAuthError,
       suspendForFailure: runInput.suspendForFailure,
       resolveReplayInvalid: resolveReplayInvalidForAttempt,
       setTerminalLifecycleMeta,

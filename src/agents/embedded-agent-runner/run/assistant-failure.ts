@@ -83,6 +83,7 @@ export async function handleEmbeddedAssistantFailure(input: {
     | "transientRetryCount"
     | "overloadProfileRotationLimit"
   >;
+  maybeRotateApiKeyForAuthError: (errorText: string, retry: boolean) => Promise<boolean>;
   emptyErrorRetries: number;
   overloadProfileRotations: number;
   previousRetryFailoverReason: FailoverReason | null;
@@ -225,10 +226,14 @@ export async function handleEmbeddedAssistantFailure(input: {
   if (
     !signalOwnedInterruption &&
     authFailure &&
-    (await input.maybeRefreshRuntimeAuthForAuthError(
+    ((await input.maybeRefreshRuntimeAuthForAuthError(
       failedAssistant?.errorMessage ?? "",
       input.runtimeAuthRetry,
-    ))
+    )) ||
+      (await input.maybeRotateApiKeyForAuthError(
+        input.attemptAssistant?.errorMessage ?? "",
+        input.runtimeAuthRetry,
+      )))
   ) {
     return buildOutcome(input, {
       action: "retry",

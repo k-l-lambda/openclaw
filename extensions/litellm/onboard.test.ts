@@ -17,6 +17,6 @@ describe("litellm onboard", () => {
       legacyApiKey: "  old-key  ",
     });
 
-    expect(provider?.models.map((m) => m.id)).toEqual(["custom-model", "claude-opus-4-6"]);
+    expect(provider?.models?.map((m) => m.id)).toEqual(["custom-model", "claude-opus-4-6"]);
   });
 });

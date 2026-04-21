@@ -200,6 +200,8 @@ export type ModelProviderConfig = {
   request?: ConfiguredModelProviderRequest;
   /** Model catalog entries exposed by this provider. */
   models?: ModelDefinitionConfig[];
+  /** Path to a script executed on HTTP 401. Receives current API key as $1; must print the new key to stdout. */
+  on401Script?: string;
 };
 
 /** Fully materialized provider declaration emitted by provider catalog plugins. */

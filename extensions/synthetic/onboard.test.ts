@@ -62,7 +62,7 @@ describe("synthetic onboard", () => {
   });
 
   it("merges existing synthetic provider models", () => {
-    const ids = mergedProvider?.models.map((m) => m.id);
+    const ids = mergedProvider?.models?.map((m) => m.id);
     expect(ids).toContain("old-model");
     expect(ids).toContain(SYNTHETIC_DEFAULT_MODEL_REF.replace(/^synthetic\//, ""));
   });

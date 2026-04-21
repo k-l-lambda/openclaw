@@ -124,6 +124,7 @@ export async function runPreparedEmbeddedLoop(
     pluginHarnessOwnsAuthBootstrap,
     attemptedThinking,
     maybeRefreshRuntimeAuthForAuthError,
+    maybeRotateApiKeyForAuthError,
     getApiKeyInfo,
   } = preparedRuntime;
   let {
@@ -541,6 +542,7 @@ export async function runPreparedEmbeddedLoop(
         authProfileStore: attemptAuthProfileStore,
         runtimeAuthRetry,
         maybeRefreshRuntimeAuthForAuthError,
+        maybeRotateApiKeyForAuthError,
         emptyErrorRetries,
         overloadProfileRotations,
         previousRetryFailoverReason: lastRetryFailoverReason,

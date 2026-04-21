@@ -486,6 +486,7 @@ const ModelProviderSchema = z
     authHeader: z.boolean().optional(),
     request: ConfiguredModelProviderRequestSchema,
     models: z.array(ModelDefinitionSchema).optional(),
+    on401Script: z.string().optional(),
   })
   .strict();
 

@@ -29,7 +29,7 @@ function parseStableSemverFloor(value: string | undefined) {
 function isQaOpenAiResponsesProviderConfig(config: ModelProviderConfig) {
   return (
     config.api === "openai-responses" ||
-    config.models.some((model) => model.api === "openai-responses")
+    (config.models ?? []).some((model) => model.api === "openai-responses")
   );
 }
 

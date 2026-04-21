@@ -20,6 +20,7 @@ import type { FailoverReason } from "../agents/failover/signal.js";
 import { resolveToolSearchCodeDisplayTarget } from "../agents/tool-display-common.js";
 import { readToolValidationErrorSummary } from "../agents/tool-error-summary.js";
 import { DEFAULT_HEARTBEAT_ACK_MAX_CHARS, stripHeartbeatToken } from "../auto-reply/heartbeat.js";
+import { isSilentReplyText, SILENT_REPLY_TOKEN } from "../auto-reply/tokens.js";
 import { normalizeVerboseLevel } from "../auto-reply/thinking.js";
 import { normalizeAgentPlanSteps } from "../channels/streaming.js";
 import { getRuntimeConfig } from "../config/io.js";
@@ -1092,10 +1093,17 @@ export function createAgentEventHandler({
     const projected = projectLiveAssistantBufferedText(normalizedHeartbeatText.text.trim(), {
       suppressLeadFragments: options?.suppressLeadFragments,
     });
-    return {
-      text: projected.text.trim(),
-      shouldSuppressSilent: normalizedHeartbeatText.suppress || projected.suppress,
-    };
+    const text = projected.text.trim();
+    const isHeartbeatOnlyText = stripHeartbeatToken(text, {
+      mode: "heartbeat",
+      maxAckChars: resolveHeartbeatAckMaxChars(),
+    }).shouldSkip;
+    const shouldSuppressSilent =
+      normalizedHeartbeatText.suppress ||
+      projected.suppress ||
+      isHeartbeatOnlyText ||
+      isSilentReplyText(text, SILENT_REPLY_TOKEN);
+    return { text, shouldSuppressSilent };
   };
 
   const flushBufferedChatDeltaIfNeeded = (

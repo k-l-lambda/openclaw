@@ -11,7 +11,7 @@ const ZERO_COST = Object.freeze({
 function cloneProvider(provider: ModelProviderConfig): ModelProviderConfig {
   return {
     ...provider,
-    models: provider.models.map((model) => ({ ...model })),
+    models: provider.models?.map((model) => ({ ...model })),
   };
 }
 

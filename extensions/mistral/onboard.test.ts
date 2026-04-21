@@ -28,8 +28,8 @@ describe("mistral onboard", () => {
       legacyModelId: "custom-model",
       legacyModelName: "Custom",
     });
-    expect(provider?.models.map((m) => m.id)).toEqual(["custom-model", "mistral-large-latest"]);
-    const mistralDefault = provider?.models.find((model) => model.id === "mistral-large-latest");
+    expect(provider?.models?.map((m) => m.id)).toEqual(["custom-model", "mistral-large-latest"]);
+    const mistralDefault = provider?.models?.find((model) => model.id === "mistral-large-latest");
     expect(mistralDefault?.contextWindow).toBe(262144);
     expect(mistralDefault?.maxTokens).toBe(16384);
   });
@@ -37,7 +37,7 @@ describe("mistral onboard", () => {
   it("uses the Mistral default model definition", () => {
     const defaultDefinition = buildMistralModelDefinition();
     const cfg = applyMistralProviderConfig({});
-    const defaultModel = cfg.models?.providers?.mistral?.models.find(
+    const defaultModel = cfg.models?.providers?.mistral?.models?.find(
       (model) => model.id === defaultDefinition.id,
     );
 
