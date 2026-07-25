@@ -53,6 +53,8 @@ export const ChatHistoryParamsSchema = closedObject({
   sessionId: Type.Optional(NonEmptyString),
   maxChars: Type.Optional(Type.Integer({ minimum: 1, maximum: 500_000 })),
   toolResultMaxChars: Type.Optional(Type.Integer({ minimum: 1, maximum: 500_000 })),
+  /** When true, skip text truncation and size-based sanitization to return full message content. */
+  rawContent: Type.Optional(Type.Boolean()),
 });
 
 /** Resolve a short chat link and fetch its first page under the same discovery policy. */

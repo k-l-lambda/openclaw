@@ -97,6 +97,8 @@ export type ChatHistoryPageParams = {
   responseHistoryBytes?: number;
   effectiveMaxChars: number;
   toolResultMaxChars?: number;
+  /** Anthroid clients request the whole projected page and cap it themselves. */
+  rawContent?: boolean;
   offset: number | undefined;
   messageId: string | undefined;
   pageCursor?: ChatHistoryPageCursor;

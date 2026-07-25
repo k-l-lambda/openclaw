@@ -94,6 +94,7 @@ export async function handleChatHistoryRequest({
     maxBytes,
     pendingBefore,
     inputRunIds,
+    rawContent,
   } = params;
   const pageCursor = decodeChatHistoryPageCursor(cursor);
   const messageId = pageCursor?.messageId ?? wireMessageId;
@@ -257,6 +258,7 @@ export async function handleChatHistoryRequest({
                     responseHistoryBytes: maxResponseBytes,
                     effectiveMaxChars,
                     toolResultMaxChars,
+                    ...(rawContent ? { rawContent: true } : {}),
                     offset,
                     messageId,
                     ...(pageCursor ? { pageCursor } : {}),
@@ -287,6 +289,7 @@ export async function handleChatHistoryRequest({
           maxHistoryBytes,
           responseHistoryBytes: maxResponseBytes,
           messageId,
+          rawContent,
         });
     const { messages, messagesBytes, responseHistoryBytes, omission, ...responseFields } =
       responsePage;

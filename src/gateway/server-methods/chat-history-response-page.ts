@@ -195,9 +195,15 @@ export function prepareChatHistoryResponsePage(
     maxHistoryBytes,
     responseHistoryBytes = maxHistoryBytes,
     messageId,
+    rawContent,
   }: Pick<
     ChatHistoryPageParams,
-    "entry" | "compactionMetrics" | "maxHistoryBytes" | "responseHistoryBytes" | "messageId"
+    | "entry"
+    | "compactionMetrics"
+    | "maxHistoryBytes"
+    | "responseHistoryBytes"
+    | "messageId"
+    | "rawContent"
   >,
   messageSequences: MessageSequences | undefined = historyPage.pagination?.messageSequences ??
     historyPage.anchor?.messageSequences,
@@ -237,7 +243,12 @@ export function prepareChatHistoryResponsePage(
     maxSingleMessageBytes: Math.min(CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES, maxCost - 1),
   });
   const capParams = { messages: replaced.messages, maxCost, messageCost, messageSequences };
-  const capped = messageId
+  // When rawContent is requested (Anthroid client), skip size-based truncation
+  // and return the full projected page as-is so the client can display complete
+  // conversation history.
+  const capped = rawContent
+    ? normalized
+    : messageId
     ? capChatHistoryAroundMessage({
         ...capParams,
         messageId: historyPage.anchor?.direction
