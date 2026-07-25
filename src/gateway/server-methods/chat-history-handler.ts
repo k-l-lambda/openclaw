@@ -144,6 +144,7 @@ async function handleChatHistoryRequest({
     maxBytes,
     pendingBefore,
     inputRunIds,
+    rawContent,
   } = params as {
     sessionKey: string;
     agentId?: string;
@@ -156,6 +157,7 @@ async function handleChatHistoryRequest({
     maxBytes?: number;
     pendingBefore?: number;
     inputRunIds?: string[];
+    rawContent?: boolean;
   };
   if (offset !== undefined && messageId !== undefined) {
     respond(
@@ -375,15 +377,20 @@ async function handleChatHistoryRequest({
           byteCounter,
         })
       : replaced.messages;
-  const capped = messageId
-    ? capChatHistoryAroundMessage({
-        messages: prioritized,
-        messageId,
-        // A nonempty JSON array costs one framing byte plus each message and its separator.
-        maxCost: responseHistoryBytes - 1,
-        messageCost: (message) => byteCounter.messageBytes(message) + 1,
-      })
-    : capArrayByJsonBytes(prioritized, responseHistoryBytes, byteCounter.messageBytes).items;
+  // When rawContent is requested (Anthroid client), skip size-based truncation
+  // and return the full projected page as-is so the client can display complete
+  // conversation history.
+  const capped = rawContent
+    ? normalized
+    : messageId
+      ? capChatHistoryAroundMessage({
+          messages: prioritized,
+          messageId,
+          // A nonempty JSON array costs one framing byte plus each message and its separator.
+          maxCost: responseHistoryBytes - 1,
+          messageCost: (message) => byteCounter.messageBytes(message) + 1,
+        })
+      : capArrayByJsonBytes(prioritized, responseHistoryBytes, byteCounter.messageBytes).items;
   const historyBudgetPreserved =
     replaced.replacedCount === 0 &&
     capped.length === normalized.length &&
