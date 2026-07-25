@@ -42,7 +42,8 @@ export function enqueuePending(key: string, msg: PendingMessage): void {
   }
   // Prune expired before push so stale items don't evict fresh ones
   const now = Date.now();
-  if (queue.length > 0 && now - queue[0].enqueuedAt >= TTL_MS) {
+  const oldest = queue[0];
+  if (oldest && now - oldest.enqueuedAt >= TTL_MS) {
     const filtered = queue.filter((m) => now - m.enqueuedAt < TTL_MS);
     queue.length = 0;
     queue.push(...filtered);
