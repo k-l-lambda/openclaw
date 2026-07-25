@@ -1,5 +1,11 @@
-import { drainPending } from "../pending-queue.js";
-import { ErrorCodes, errorShape } from "../protocol/index.js";
+import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
+// session.drainPending + session.drainAllPending RPC handlers.
+// Backed by the in-memory pending-queue (../pending-queue.js). Clients
+// (Anthroid) call drainPending with their session key on reconnect/periodic
+// poll to pull offline-buffered messages; drainAllPending is the operator
+// admin variant. Re-ported during the 0724-25 upstream rebase onto the
+// per-handler-module structure.
+import { drainAll, drainPending } from "../pending-queue.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
 export const sessionDrainHandlers: GatewayRequestHandlers = {
@@ -13,7 +19,25 @@ export const sessionDrainHandlers: GatewayRequestHandlers = {
     }
     const messages = drainPending(key);
     respond(true, {
-      messages: messages.map((m) => ({ content: m.content })),
+      messages: messages.map((m) => ({
+        content: m.content,
+        messageId: m.messageId,
+        source: m.source,
+        enqueuedAt: m.enqueuedAt,
+      })),
+    });
+  },
+
+  "session.drainAllPending": async ({ respond }) => {
+    const messages = drainAll();
+    respond(true, {
+      messages: messages.map((m) => ({
+        sessionKey: m.sessionKey,
+        content: m.content,
+        messageId: m.messageId,
+        source: m.source,
+        enqueuedAt: m.enqueuedAt,
+      })),
     });
   },
 };

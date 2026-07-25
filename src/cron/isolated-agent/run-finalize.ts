@@ -1,4 +1,5 @@
 /** Final persistence, telemetry, and delivery for an isolated cron run. */
+import { randomUUID } from "node:crypto";
 import { asPositiveFiniteNumber as resolvePositiveContextTokens } from "@openclaw/normalization-core/number-coercion";
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import { hasAcceptedSessionSpawn } from "../../agents/accepted-session-spawn.js";
@@ -16,6 +17,7 @@ import {
   resolveProjectedSessionContextTokens,
   resolveTrustedSessionContextTokens,
 } from "../../config/sessions/context-token-provenance.js";
+import { enqueuePending } from "../../gateway/pending-queue.js";
 import { resolveSourceDeliveryOutcome } from "../../infra/outbound/source-delivery-plan.js";
 import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 import {
@@ -357,6 +359,24 @@ export async function finalizeCronRun(params: {
   }
   // Dispatch owns transcript cleanup from here; a thrown delivery error must retain it too.
   params.markCronRunSessionCleanupHandled();
+  // Enqueue the cron run's synthesized reply for offline Anthroid clients that
+  // will drain it via session.drainPending on reconnect/poll. Skip when the run
+  // is itself delivering to the anthroid channel — that path already enqueues
+  // via the anthroid plugin's outbound.sendText, so enqueuing here would dup.
+  const pendingCronText = normalizeOptionalString(synthesizedText);
+  const cronDeliveryChannel = prepared.resolvedDelivery.ok
+    ? prepared.resolvedDelivery.channel
+    : undefined;
+  const shouldEnqueuePending = prepared.deliveryRequested && cronDeliveryChannel !== "anthroid";
+  if (pendingCronText && shouldEnqueuePending) {
+    enqueuePending(prepared.runSessionKey, {
+      content: pendingCronText,
+      sessionKey: prepared.runSessionKey,
+      messageId: randomUUID(),
+      enqueuedAt: Date.now(),
+      source: "cron",
+    });
+  }
   const { dispatchCronDelivery } = await loadCronDeliveryRuntime();
   const deliveryResult = await dispatchCronDelivery({
     cfgWithAgentDefaults: prepared.cfgWithAgentDefaults,
