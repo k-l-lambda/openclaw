@@ -120,6 +120,8 @@ USER.md
 *.zip
 .idea
 .vscode/
+*.local
+*.local.*
 
 # local tooling
 .antigravitycli/

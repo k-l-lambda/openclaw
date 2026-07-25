@@ -391,6 +391,8 @@ const CORE_GATEWAY_METHOD_SPECS = [
         "Deprecated alias for chat.send queueMode interrupt; removal per protocol deprecation policy.",
     },
   ],
+  ["session.drainPending", "session-drain", "operator.write", "<=2026.7"],
+  ["session.drainAllPending", "session-drain", "operator.write", "<=2026.7"],
   ["push.test", "push", "operator.write", "<=2026.7", { advertise: false }],
   ["attach.grant", "attach", "operator.admin", "<=2026.7", CONTROL_PLANE_WRITE],
   ["attach.revoke", "attach", "operator.admin", "<=2026.7"],
