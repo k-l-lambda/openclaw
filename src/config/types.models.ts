@@ -170,7 +170,7 @@ export type ModelDefinitionConfig = {
 
 export type ModelProviderConfig = {
   /** Provider API base URL. */
-  baseUrl?: string;
+  baseUrl: string;
   /** API key or secret reference for this provider. */
   apiKey?: SecretInput;
   /** Authentication mode used when resolving credentials for this provider. */
@@ -199,7 +199,7 @@ export type ModelProviderConfig = {
   /** Provider request transport/retry overrides. */
   request?: ConfiguredModelProviderRequest;
   /** Model catalog entries exposed by this provider. */
-  models?: ModelDefinitionConfig[];
+  models: ModelDefinitionConfig[];
   /** Path to a script executed on HTTP 401. Receives current API key as $1; must print the new key to stdout. */
   on401Script?: string;
 };
