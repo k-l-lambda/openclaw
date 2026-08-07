@@ -119,6 +119,8 @@ export function preserveReplyPayloadMediaSelection(
 export type { OutboundPayloadPlan } from "../infra/outbound/reply-payload-parts.js";
 export { buildOutboundSessionContext } from "../infra/outbound/session-context.js";
 export type { OutboundSessionContext } from "../infra/outbound/session-context.js";
+export { enqueuePending } from "../gateway/pending-queue.js";
+export type { PendingMessage } from "../gateway/pending-queue.js";
 export type { OutboundDeliveryFormattingOptions } from "../infra/outbound/formatting.js";
 export { resolveAgentOutboundIdentity } from "../infra/outbound/identity.js";
 export type { OutboundIdentity } from "../infra/outbound/identity.js";

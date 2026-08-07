@@ -2769,6 +2769,29 @@ describe("deliverOutboundPayloads", () => {
     );
   });
 
+  it("threads session context into the channel outbound adapter", async () => {
+    const sendText = vi.fn().mockResolvedValue({
+      channel: "matrix" as const,
+      messageId: "mx-session-1",
+      roomId: "!room",
+    });
+    setTestOutbound({ sendText });
+
+    await deliverOutboundPayloads({
+      cfg: {},
+      channel: "matrix",
+      to: "!room",
+      payloads: [{ text: "hello" }],
+      session: { key: "agent:tank:main", title: "Cron: status" },
+    });
+
+    expect(sendText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: { key: "agent:tank:main", title: "Cron: status" },
+      }),
+    );
+  });
+
   it.each([["not_sent", "adapter_returned_no_send"]] as const)(
     "does not count sendPayload outcome %s as delivered",
     async (outcome, reason) => {

@@ -38,6 +38,7 @@ type CronAnnounceTarget = {
   threadId?: string | number;
   accountId?: string;
   sessionKey?: string;
+  title?: string;
   inheritSessionThread?: boolean;
 };
 
@@ -90,6 +91,7 @@ async function resolveCronAnnounceDelivery(params: {
       jobId: params.jobId,
       sessionKey: params.target.sessionKey,
     }),
+    title: params.target.title,
   });
 
   return {

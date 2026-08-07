@@ -43,6 +43,8 @@ export type OutboundSessionContext = {
    * "direct" here over-collects under audit.messages="direct".
    */
   conversationKind?: "direct" | "group" | "channel";
+  /** Optional user-visible title for transports that support named notifications. */
+  title?: string;
   /** Active agent id used for workspace-scoped media roots. */
   agentId?: string;
   /** Originating account id used for requester-scoped group policy resolution. */
@@ -64,6 +66,7 @@ export function buildOutboundSessionContext(params: {
   policySessionKey?: string | null;
   conversationType?: string | null;
   isGroup?: boolean | null;
+  title?: string | null;
   agentId?: string | null;
   requesterAccountId?: string | null;
   requesterSenderId?: string | null;
@@ -89,6 +92,7 @@ export function buildOutboundSessionContext(params: {
   const normalizedChatType =
     declaredChatType ?? normalizeChatType(deliveryRoute?.peerKind) ?? groupChatType;
   const conversationType = normalizedChatType === "channel" ? "group" : normalizedChatType;
+  const title = normalizeOptionalString(params.title);
   const explicitAgentId = normalizeOptionalString(params.agentId);
   const agentId = key
     ? resolveSessionAgentId({ sessionKey: key, config: params.cfg, agentId: explicitAgentId })
@@ -98,6 +102,7 @@ export function buildOutboundSessionContext(params: {
     ...(policyKey ? { policyKey } : {}),
     ...(conversationType ? { conversationType } : {}),
     ...(conversationKind ? { conversationKind } : {}),
+    ...(title ? { title } : {}),
     ...(agentId ? { agentId } : {}),
   };
   for (const field of [

@@ -4,6 +4,7 @@ import type { ChannelApprovalKind } from "../../infra/approval-types.js";
 import type { OutboundDeliveryResult } from "../../infra/outbound/deliver-types.js";
 import type { OutboundDeliveryFormattingOptions } from "../../infra/outbound/formatting.js";
 import type { OutboundIdentity } from "../../infra/outbound/identity-types.js";
+import type { OutboundSessionContext } from "../../infra/outbound/session-context.js";
 import type { MessagePresentation, ReplyPayloadDeliveryPin } from "../../interactive/payload.js";
 import type {
   ChannelMessageSendMediaContext,
@@ -22,6 +23,8 @@ export type ChannelOutboundContext = Omit<
   mediaUrl?: string;
   formatting?: OutboundDeliveryFormattingOptions;
   identity?: OutboundIdentity;
+  /** Delivery session context (key, title) for transports that surface it, e.g. Anthroid. */
+  session?: OutboundSessionContext;
   /** @internal Report each completed platform sub-send before starting another fallible step. */
   onDeliveryResult?: (result: OutboundDeliveryResult) => Promise<void> | void;
 };

@@ -101,6 +101,7 @@ export async function finalizeCronCompletionAnnouncement(params: {
             threadId: plan.threadId,
             accountId: plan.accountId,
             sessionKey: resolveCronDeliverySessionKey(params.job),
+            title: `Cron: ${params.job.name?.trim() || params.job.id}`,
           },
           payload: { text },
           abortSignal,
