@@ -85,6 +85,7 @@ export async function deliverOutboundPayloadsCore(
       formatting: params.formatting,
       threadId: params.threadId,
       identity: params.identity,
+      session: params.session,
       gifPlayback: params.gifPlayback,
       forceDocument: params.forceDocument,
       silent: params.silent,

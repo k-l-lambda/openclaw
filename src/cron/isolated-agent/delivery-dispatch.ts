@@ -307,6 +307,7 @@ export async function dispatchCronDelivery(
         cfg: params.cfgWithAgentDefaults,
         agentId: params.agentId,
         sessionKey: deliverySessionKey,
+        title: `Cron: ${params.job.name?.trim() || params.job.id}`,
       });
       const awarenessMainSessionKey = resolveCronAwarenessMainSessionKey({
         cfg: params.cfgWithAgentDefaults,

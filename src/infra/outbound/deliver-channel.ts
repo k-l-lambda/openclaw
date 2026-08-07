@@ -536,6 +536,7 @@ const createChannelOutboundContextBase = (params: ChannelHandlerParams) => ({
   formatting: params.formatting,
   threadId: params.threadId,
   identity: params.identity,
+  session: params.session,
   gifPlayback: params.gifPlayback,
   forceDocument: params.forceDocument,
   deps: params.deps,

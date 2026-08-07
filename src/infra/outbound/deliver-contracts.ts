@@ -147,6 +147,7 @@ export type ChannelHandlerParams = {
   formatting?: OutboundDeliveryFormattingOptions;
   threadId?: string | number | null;
   identity?: OutboundIdentity;
+  session?: OutboundSessionContext;
   deps?: OutboundSendDeps;
   gifPlayback?: boolean;
   forceDocument?: boolean;

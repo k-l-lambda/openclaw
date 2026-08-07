@@ -5797,6 +5797,29 @@ describe("deliverOutboundPayloads", () => {
     );
   });
 
+  it("threads session context into the channel outbound adapter", async () => {
+    const sendText = vi.fn().mockResolvedValue({
+      channel: "matrix" as const,
+      messageId: "mx-session-1",
+      roomId: "!room",
+    });
+    setTestOutbound({ sendText });
+
+    await deliverOutboundPayloads({
+      cfg: {},
+      channel: "matrix",
+      to: "!room",
+      payloads: [{ text: "hello" }],
+      session: { key: "agent:tank:main", title: "Cron: status" },
+    });
+
+    expect(sendText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        session: { key: "agent:tank:main", title: "Cron: status" },
+      }),
+    );
+  });
+
   it("threads sessionKey into the message_sending hook context when session is provided", async () => {
     hookMocks.runner.hasHooks.mockImplementation(
       (hookName?: string) => hookName === "message_sending",

@@ -510,6 +510,7 @@ export async function finalizeCronRun(params: {
   if (pendingCronText && shouldEnqueuePending) {
     enqueuePending(prepared.runSessionKey, {
       content: pendingCronText,
+      title: `Cron: ${prepared.input.job.name?.trim() || prepared.input.job.id}`,
       sessionKey: prepared.runSessionKey,
       messageId: randomUUID(),
       enqueuedAt: Date.now(),

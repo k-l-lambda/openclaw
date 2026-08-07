@@ -43,6 +43,8 @@ export type OutboundSessionContext = {
    * "direct" here over-collects under audit.messages="direct".
    */
   conversationKind?: "direct" | "group" | "channel";
+  /** Optional user-visible title for transports that support named notifications. */
+  title?: string;
   /** Active agent id used for workspace-scoped media roots. */
   agentId?: string;
   /** Originating account id used for requester-scoped group policy resolution. */
@@ -64,6 +66,7 @@ export function buildOutboundSessionContext(params: {
   policySessionKey?: string | null;
   conversationType?: string | null;
   isGroup?: boolean | null;
+  title?: string | null;
   agentId?: string | null;
   requesterAccountId?: string | null;
   requesterSenderId?: string | null;
@@ -97,6 +100,7 @@ export function buildOutboundSessionContext(params: {
           : params.isGroup === false
             ? "direct"
             : undefined;
+  const title = normalizeOptionalString(params.title);
   const explicitAgentId = normalizeOptionalString(params.agentId);
   const requesterAccountId = normalizeOptionalString(params.requesterAccountId);
   const requesterSenderId = normalizeOptionalString(params.requesterSenderId);
@@ -111,6 +115,7 @@ export function buildOutboundSessionContext(params: {
     !policyKey &&
     !conversationType &&
     !conversationKind &&
+    !title &&
     !agentId &&
     !requesterAccountId &&
     !requesterSenderId &&
@@ -125,6 +130,7 @@ export function buildOutboundSessionContext(params: {
     ...(policyKey ? { policyKey } : {}),
     ...(conversationType ? { conversationType } : {}),
     ...(conversationKind ? { conversationKind } : {}),
+    ...(title ? { title } : {}),
     ...(agentId ? { agentId } : {}),
     ...(requesterAccountId ? { requesterAccountId } : {}),
     ...(requesterSenderId ? { requesterSenderId } : {}),

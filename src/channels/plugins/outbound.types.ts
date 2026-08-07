@@ -11,6 +11,7 @@ import type { OutboundDeliveryResult } from "../../infra/outbound/deliver-types.
 import type { OutboundDeliveryFormattingOptions } from "../../infra/outbound/formatting.js";
 import type { OutboundIdentity } from "../../infra/outbound/identity-types.js";
 import type { OutboundSendDeps } from "../../infra/outbound/send-deps.js";
+import type { OutboundSessionContext } from "../../infra/outbound/session-context.js";
 import type { MessagePresentation, ReplyPayloadDeliveryPin } from "../../interactive/payload.js";
 import type { OutboundMediaAccess } from "../../media/load-options.js";
 import type {
@@ -38,6 +39,7 @@ export type ChannelOutboundContext = {
   threadId?: string | number | null;
   accountId?: string | null;
   identity?: OutboundIdentity;
+  session?: OutboundSessionContext;
   deps?: OutboundSendDeps;
   silent?: boolean;
   /** Live cancellation signal; check before each physical send and after awaited preparation. */

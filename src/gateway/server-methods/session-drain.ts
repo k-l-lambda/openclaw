@@ -21,6 +21,7 @@ export const sessionDrainHandlers: GatewayRequestHandlers = {
     respond(true, {
       messages: messages.map((m) => ({
         content: m.content,
+        title: m.title,
         messageId: m.messageId,
         source: m.source,
         enqueuedAt: m.enqueuedAt,
@@ -34,6 +35,7 @@ export const sessionDrainHandlers: GatewayRequestHandlers = {
       messages: messages.map((m) => ({
         sessionKey: m.sessionKey,
         content: m.content,
+        title: m.title,
         messageId: m.messageId,
         source: m.source,
         enqueuedAt: m.enqueuedAt,

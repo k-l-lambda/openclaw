@@ -10,6 +10,7 @@
 
 export interface PendingMessage {
   content: string;
+  title?: string;
   sessionKey: string;
   messageId: string;
   enqueuedAt: number;
