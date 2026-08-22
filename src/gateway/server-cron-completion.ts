@@ -6,7 +6,7 @@ import type { CronCompletionDeliveryFence } from "../cron/delivery-attempt-fence
 import { resolveCronDeliveryPlan, sendCronAnnouncePayloadStrict } from "../cron/delivery.js";
 import { retryTransientDirectCronDelivery } from "../cron/isolated-agent/delivery-dispatch-policy.js";
 import { createCronExecutionId } from "../cron/run-id.js";
-import { resolveCronDeliverySessionKey } from "../cron/session-target.js";
+import { resolveCronDeliverySessionKey, resolveCronDeliveryTitle } from "../cron/session-target.js";
 import type { CronDeliveryTrace, CronJob, CronResolvedDeliveryState } from "../cron/types.js";
 import { formatErrorMessage } from "../infra/errors.js";
 import type { getChildLogger } from "../logging.js";
@@ -101,7 +101,7 @@ export async function finalizeCronCompletionAnnouncement(params: {
             threadId: plan.threadId,
             accountId: plan.accountId,
             sessionKey: resolveCronDeliverySessionKey(params.job),
-            title: `Cron: ${params.job.name?.trim() || params.job.id}`,
+            title: resolveCronDeliveryTitle(params.job),
           },
           payload: { text },
           abortSignal,

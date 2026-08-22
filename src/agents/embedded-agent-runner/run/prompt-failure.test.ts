@@ -353,6 +353,7 @@ describe("handleEmbeddedPromptFailure", () => {
       modelId: "sonnet",
       activeErrorContext: { provider: "claude-cli", model: "sonnet" },
       maybeRefreshRuntimeAuthForAuthError: vi.fn(async () => true),
+      maybeRotateApiKeyForAuthError: vi.fn(async () => false),
       failover: {
         resolveAuthProfileFailureReason: vi.fn(() => null),
       },

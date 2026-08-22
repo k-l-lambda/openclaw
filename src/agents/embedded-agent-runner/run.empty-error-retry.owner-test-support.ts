@@ -68,6 +68,7 @@ function makeInput(
       attemptedThinking: new Set(["off"]),
       attemptAuthProfileStore: { version: 1, profiles: {} },
       maybeRefreshRuntimeAuthForAuthError: vi.fn(async () => false),
+      maybeRotateApiKeyForAuthError: vi.fn(async () => false),
     },
     runtime: {
       thinkLevel: "off",

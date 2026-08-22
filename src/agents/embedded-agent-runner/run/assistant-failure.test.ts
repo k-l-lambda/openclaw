@@ -91,6 +91,7 @@ function makeExhaustedCredentialFailureInput(options?: { replaySafe?: boolean })
         },
       },
       maybeRefreshRuntimeAuthForAuthError: vi.fn(async () => false),
+      maybeRotateApiKeyForAuthError: vi.fn(async () => false),
     },
     runtime: {
       thinkLevel: "off",

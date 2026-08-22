@@ -15,7 +15,7 @@ import { retryTransientDirectCronDelivery } from "../cron/isolated-agent/deliver
 import { createCronExecutionId } from "../cron/run-id.js";
 import type { CronEvent, CronService } from "../cron/service.js";
 import type { CronFailureRepairRequest } from "../cron/service/state.js";
-import { resolveCronDeliverySessionKey } from "../cron/session-target.js";
+import { resolveCronDeliverySessionKey, resolveCronDeliveryTitle } from "../cron/session-target.js";
 import type {
   CronFailureNotificationDelivery,
   CronJob,
@@ -458,7 +458,7 @@ async function sendGatewayCronFailureAlertUnderAdmission(
           accountId: params.accountId,
           threadId: params.threadId,
           sessionKey: resolveCronDeliverySessionKey(params.job),
-          title: `Cron: ${params.job.name?.trim() || params.job.id}`,
+          title: resolveCronDeliveryTitle(params.job),
           inheritSessionThread: params.inheritSessionThread,
         },
         payload: {
