@@ -1137,6 +1137,7 @@ describe("dispatchCronDelivery", () => {
         cfg: params.cfgWithAgentDefaults,
         agentId: "main",
         sessionKey: `agent:main:work${suffix}`,
+        title: "Cron: Test Job",
       });
       expect(ensureOutboundSessionEntry).toHaveBeenCalledWith({
         sourceSessionKey: "agent:main:cron:test-job",
@@ -1906,6 +1907,7 @@ describe("dispatchCronDelivery", () => {
       cfg: params.cfgWithAgentDefaults,
       agentId: "main",
       sessionKey: "agent:main:session:daily-report",
+      title: "Cron: Test Job",
     });
     expect(appendAssistantMessageToSessionTranscript).toHaveBeenCalledWith({
       sessionKey: "agent:main:session:daily-report",
