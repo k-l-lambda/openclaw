@@ -1978,6 +1978,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
       cfg: params.cfgWithAgentDefaults,
       agentId: "main",
       sessionKey: "agent:main:work",
+      title: "Cron: Test Job",
     });
     expect(ensureOutboundSessionEntry).toHaveBeenCalledWith({
       sourceSessionKey: "agent:main",
@@ -2019,6 +2020,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
       cfg: params.cfgWithAgentDefaults,
       agentId: "main",
       sessionKey: "agent:main:work:thread:42",
+      title: "Cron: Test Job",
     });
     expect(ensureOutboundSessionEntry).toHaveBeenCalledWith({
       sourceSessionKey: "agent:main",
@@ -3769,6 +3771,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
       cfg: params.cfgWithAgentDefaults,
       agentId: "main",
       sessionKey: "agent:main:telegram:123456",
+      title: "Cron: Test Job",
     });
   });
 
@@ -3817,6 +3820,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
       cfg: params.cfgWithAgentDefaults,
       agentId: "main",
       sessionKey: "agent:main:whatsapp:direct:+15551234567",
+      title: "Cron: Test Job",
     });
     expect(appendAssistantMessageToSessionTranscript).toHaveBeenCalledWith({
       sessionKey: "agent:main:whatsapp:direct:+15551234567",
@@ -3943,6 +3947,7 @@ describe("dispatchCronDelivery — double-announce guard", () => {
       cfg: params.cfgWithAgentDefaults,
       agentId: "main",
       sessionKey: "agent:main:session:daily-report",
+      title: "Cron: Test Job",
     });
     expect(appendAssistantMessageToSessionTranscript).toHaveBeenCalledWith({
       sessionKey: "agent:main:session:daily-report",
