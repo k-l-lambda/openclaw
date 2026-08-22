@@ -1,8 +1,6 @@
 /**
  * Coordinates provider auth, profile rotation, and runtime auth refresh.
  */
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import type { ThinkLevel } from "../../../auto-reply/thinking.js";
 import { formatErrorMessage } from "../../../infra/errors.js";
 import type { Model } from "../../../llm/types.js";
@@ -40,6 +38,7 @@ import {
 import { protectPreparedProviderRuntimeAuth } from "../../provider-runtime-auth-protection.js";
 import { unwrapSecretSentinelsForProviderEgress } from "../../provider-secret-egress.js";
 import { clampRuntimeAuthRefreshDelayMs } from "../../runtime-auth-refresh.js";
+import { createApiKeyRotationHook } from "./auth-key-rotation.js";
 import { resolveAuthProfileFailureReason } from "./auth-profile-failure-policy.js";
 import type { AuthProfileFailurePolicy } from "./auth-profile-failure-policy.types.js";
 import {
@@ -734,39 +733,10 @@ export function createEmbeddedRunAuthController(params: {
     }
   };
 
-  const execFileAsync = promisify(execFile);
-
-  const maybeRotateApiKeyForAuthError = async (
-    errorText: string,
-    retried: boolean,
-  ): Promise<boolean> => {
-    if (retried) {
-      return false;
-    }
-    if (classifyFailoverReason(errorText, { provider: params.getProvider() }) !== "auth") {
-      return false;
-    }
-    const providerName = params.getRuntimeModel().provider;
-    const on401Script = params.config?.models?.providers?.[providerName]?.on401Script;
-    if (!on401Script) {
-      return false;
-    }
-    const currentKey = params.getApiKeyInfo()?.apiKey ?? "";
-    try {
-      const { stdout } = await execFileAsync(on401Script, currentKey ? [currentKey] : [], {
-        timeout: 10_000,
-      });
-      const newKey = stdout.trim();
-      if (newKey && newKey !== currentKey) {
-        params.authStorage.setRuntimeApiKey(providerName, newKey);
-        params.log.info(`[on401] Rotated API key for provider "${providerName}"`);
-        return true;
-      }
-    } catch (err) {
-      params.log.warn(`[on401] Key rotation script failed: ${formatErrorMessage(err)}`);
-    }
-    return false;
-  };
+  const maybeRotateApiKeyForAuthError = createApiKeyRotationHook({
+    ...params,
+    classifyAuthError: (text, provider) => classifyFailoverReason(text, { provider }) === "auth",
+  });
 
   return {
     applyAuthProfileCandidate: applyApiKeyInfo,

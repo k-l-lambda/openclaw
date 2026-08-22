@@ -110,6 +110,7 @@ function makeExhaustedCredentialFailureInput(options?: { replaySafe?: boolean })
       advanceAuthProfile,
       advanceRateLimitAuthProfile: vi.fn(async () => true),
     },
+    maybeRotateApiKeyForAuthError: vi.fn(async () => false),
     traceAttempts,
     suspendForFailure: vi.fn(),
     suspensionSessionId: "session:credential-enoent",

@@ -19,6 +19,7 @@ import { createLazyImportLoader } from "../../shared/lazy-promise.js";
 import { CRON_DIRECT_DELIVERY_CONTEXT_KIND } from "../../shared/transcript-only-openclaw-assistant.js";
 import { resolveAdmittedCronCompletionStatus } from "../completion-status.js";
 import { normalizeCronRunErrorText } from "../service/execution-errors.js";
+import { resolveCronDeliveryTitle } from "../session-target.js";
 import type { CronResolvedDeliveryState } from "../types.js";
 import { commitCurrentSessionCronCompletion } from "./current-session-completion.js";
 import {
@@ -307,12 +308,10 @@ export async function dispatchCronDelivery(
         cfg: params.cfgWithAgentDefaults,
         agentId: params.agentId,
         sessionKey: deliverySessionKey,
-        title: `Cron: ${params.job.name?.trim() || params.job.id}`,
+        title: resolveCronDeliveryTitle(params.job),
       });
-      const awarenessMainSessionKey = resolveCronAwarenessMainSessionKey({
-        cfg: params.cfgWithAgentDefaults,
-        agentId: params.agentId,
-      });
+      const awarenessScope = { cfg: params.cfgWithAgentDefaults, agentId: params.agentId };
+      const awarenessMainSessionKey = resolveCronAwarenessMainSessionKey(awarenessScope);
       const mirrorTargetsAwarenessMainSession = isSameSessionKey(
         deliverySessionKey,
         awarenessMainSessionKey,

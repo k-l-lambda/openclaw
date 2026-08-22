@@ -56,6 +56,7 @@ import {
 import { applyJobPatch } from "../cron/service/jobs.js";
 import {
   resolveCronDeliverySessionKey,
+  resolveCronDeliveryTitle,
   resolveCronSessionTargetSessionKey,
 } from "../cron/session-target.js";
 import { skillCollectionReviewMonitorAgentId } from "../cron/skill-collection-review-monitor.js";
@@ -334,7 +335,7 @@ async function finalizeCronCompletionAnnouncement(params: {
             threadId: plan.threadId,
             accountId: plan.accountId,
             sessionKey: resolveCronDeliverySessionKey(params.job),
-            title: `Cron: ${params.job.name?.trim() || params.job.id}`,
+            title: resolveCronDeliveryTitle(params.job),
           },
           payload: { text },
           abortSignal,

@@ -13,7 +13,10 @@ import { resolveCronDeliveryPlan, sendCronAnnouncePayloadStrict } from "../cron/
 import { retryTransientDirectCronDelivery } from "../cron/isolated-agent/delivery-dispatch-policy.js";
 import { createCronExecutionId } from "../cron/run-id.js";
 import type { CronEvent, CronService } from "../cron/service.js";
-import { resolveCronDeliverySessionKey } from "../cron/session-target.js";
+import {
+  resolveCronDeliverySessionKey,
+  resolveCronDeliveryTitle,
+} from "../cron/session-target.js";
 import type { CronFailureNotificationDelivery, CronJob } from "../cron/types.js";
 import { normalizeHttpWebhookUrl } from "../cron/webhook-url.js";
 import { formatErrorMessage } from "../infra/errors.js";
@@ -401,7 +404,7 @@ async function sendGatewayCronFailureAlertUnderAdmission(
           accountId: params.accountId,
           threadId: params.threadId,
           sessionKey: resolveCronDeliverySessionKey(params.job),
-          title: `Cron: ${params.job.name?.trim() || params.job.id}`,
+          title: resolveCronDeliveryTitle(params.job),
           inheritSessionThread: params.inheritSessionThread,
         },
         payload: {

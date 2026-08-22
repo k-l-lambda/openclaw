@@ -77,6 +77,7 @@ function makeInput(
       advanceAuthProfile: vi.fn(async () => false),
       advanceRateLimitAuthProfile: vi.fn(async () => false),
     },
+    maybeRotateApiKeyForAuthError: vi.fn(async () => false),
     traceAttempts: [],
     suspendForFailure: vi.fn(),
     suspensionSessionId: "session:empty-error",

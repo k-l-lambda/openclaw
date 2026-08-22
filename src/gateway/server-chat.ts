@@ -1096,7 +1096,7 @@ export function createAgentEventHandler({
     const text = projected.text.trim();
     const isHeartbeatOnlyText = stripHeartbeatToken(text, {
       mode: "heartbeat",
-      maxAckChars: resolveHeartbeatAckMaxChars(),
+      maxAckChars: DEFAULT_HEARTBEAT_ACK_MAX_CHARS,
     }).shouldSkip;
     const shouldSuppressSilent =
       normalizedHeartbeatText.suppress ||

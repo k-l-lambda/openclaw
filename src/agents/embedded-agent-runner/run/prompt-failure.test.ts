@@ -58,6 +58,7 @@ function makeParams(
       maybeMarkAuthProfileFailure: vi.fn(async () => {}),
       transientRetryCount: 0,
     },
+    maybeRotateApiKeyForAuthError: vi.fn(async () => false),
     attemptedThinking: new Set(),
     thinkLevel: "low",
     getThinkLevel: () => "low",

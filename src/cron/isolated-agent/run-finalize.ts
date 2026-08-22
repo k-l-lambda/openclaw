@@ -37,6 +37,7 @@ import {
   createCronRunDiagnosticsFromError,
   mergeCronRunDiagnostics,
 } from "../run-diagnostics.js";
+import { resolveCronDeliveryTitle } from "../session-target.js";
 import type { CronDeliveryTrace, CronRunTelemetry } from "../types.js";
 import { resolveCronChannelOutputPolicy } from "./channel-output-policy.js";
 import { resolveCronPayloadOutcome } from "./helpers.js";
@@ -510,7 +511,7 @@ export async function finalizeCronRun(params: {
   if (pendingCronText && shouldEnqueuePending) {
     enqueuePending(prepared.runSessionKey, {
       content: pendingCronText,
-      title: `Cron: ${prepared.input.job.name?.trim() || prepared.input.job.id}`,
+      title: resolveCronDeliveryTitle(prepared.input.job),
       sessionKey: prepared.runSessionKey,
       messageId: randomUUID(),
       enqueuedAt: Date.now(),

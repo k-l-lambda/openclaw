@@ -45,6 +45,11 @@ export function resolveCronCurrentSessionTarget(params: {
   return sessionKey ? "current" : "isolated";
 }
 
+/** Builds the user-visible cron label carried on outbound deliveries and notifications. */
+export function resolveCronDeliveryTitle(job: { name?: string | null; id: string }): string {
+  return `Cron: ${job.name?.trim() || job.id}`;
+}
+
 /** Chooses the session key used for cron delivery, preferring explicit persistent targets. */
 export function resolveCronDeliverySessionKey(job: {
   sessionTarget?: string | null;
