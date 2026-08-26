@@ -403,6 +403,17 @@ describe("short-term dreaming config", () => {
       resolveMemoryDeepDreamingConfig({ pluginConfig: { dreaming: { phases: { deep } } } }),
     ).toMatchObject(expected);
   });
+
+  it("carries humanReadable into the deep promotion config", () => {
+    // The deep resolver feeds the promotion sweep; a dropped flag would silently
+    // leave machine-only deployments with the Dream Diary still enabled.
+    expect(resolveMemoryDeepDreamingConfig({ pluginConfig: {} }).humanReadable).toBe(true);
+    expect(
+      resolveMemoryDeepDreamingConfig({
+        pluginConfig: { dreaming: { humanReadable: false } },
+      }).humanReadable,
+    ).toBe(false);
+  });
 });
 
 describe("dreaming service reconciliation", () => {

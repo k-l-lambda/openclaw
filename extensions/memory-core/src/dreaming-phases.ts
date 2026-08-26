@@ -79,6 +79,8 @@ import {
 type Logger = Pick<OpenClawPluginApi["logger"], "info" | "warn" | "error">;
 type DreamingPhaseStorageConfig = {
   timezone?: string;
+  /** False suppresses every Dream Diary write; machine artifacts still run. */
+  humanReadable?: boolean;
   storage: { mode: "inline" | "separate" | "both"; separateReports: boolean };
   execution?: { model?: string };
 };
@@ -1433,7 +1435,9 @@ async function runLightDreaming(
   });
   const { capped, recentDiaryEntries } = prepared;
   // Generate dream diary narrative from the staged entries.
-  if (params.subagent && capped.length > 0) {
+  // Machine-only mode keeps the staged artifacts and phase signals above
+  // and skips this human-readable write.
+  if (params.config.humanReadable !== false && params.subagent && capped.length > 0) {
     const themes = uniqueStrings(capped.flatMap((e) => e.conceptTags).filter(Boolean));
     const data: NarrativePhaseData = {
       phase: "light",
@@ -1518,7 +1522,9 @@ async function runRemDreaming(
   });
   const { entries, preview } = prepared;
   // Generate dream diary narrative from REM reflections.
-  if (params.subagent && entries.length > 0) {
+  // Machine-only mode keeps the staged artifacts and phase signals above
+  // and skips this human-readable write.
+  if (params.config.humanReadable !== false && params.subagent && entries.length > 0) {
     const snippets = preview.candidateTruths.map((t) => t.snippet).filter(Boolean);
     const themes = preview.reflections.filter(
       (r) => !r.startsWith("- No strong") && !r.startsWith("  -"),

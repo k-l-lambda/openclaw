@@ -21,6 +21,9 @@ import type { OpenClawConfig } from "../config/types.openclaw.js";
 
 const DEFAULT_MEMORY_DREAMING_ENABLED = true;
 const DEFAULT_MEMORY_DREAMING_TIMEZONE = undefined;
+// Default true preserves the established Dream Diary review surface; opting out
+// is for deployments that treat memory output as an automation artifact.
+const DEFAULT_MEMORY_DREAMING_HUMAN_READABLE = true;
 const DEFAULT_MEMORY_DREAMING_VERBOSE_LOGGING = false;
 const DEFAULT_MEMORY_DREAMING_STORAGE_MODE = "separate";
 const DEFAULT_MEMORY_DREAMING_SEPARATE_REPORTS = false;
@@ -246,6 +249,13 @@ type MemoryDreamingConfig = {
   enabled: boolean;
   frequency: string;
   timezone?: string;
+  /**
+   * When false, dreaming keeps every machine artifact (phase reports, signal
+   * state, promotion into MEMORY.md) but writes no human-readable Dream Diary
+   * output: no narrative subagent, no fallback diary entry, no deep summary
+   * appended to DREAMS.md.
+   */
+  humanReadable: boolean;
   verboseLogging: boolean;
   storage: MemoryDreamingStorageConfig;
   execution: {
@@ -440,6 +450,8 @@ export function resolveMemoryDreamingConfig(params: {
     enabled: parseBoolean(dreaming?.enabled) ?? DEFAULT_MEMORY_DREAMING_ENABLED,
     frequency,
     ...(timezone ? { timezone } : {}),
+    humanReadable:
+      parseBoolean(dreaming?.humanReadable) ?? DEFAULT_MEMORY_DREAMING_HUMAN_READABLE,
     verboseLogging:
       parseBoolean(dreaming?.verboseLogging) ?? DEFAULT_MEMORY_DREAMING_VERBOSE_LOGGING,
     storage: {
@@ -565,6 +577,7 @@ export function resolveMemoryDeepDreamingConfig(params: {
   cfg?: OpenClawConfig;
 }): MemoryDeepDreamingConfig & {
   timezone?: string;
+  humanReadable: boolean;
   verboseLogging: boolean;
   storage: MemoryDreamingStorageConfig;
 } {
@@ -573,6 +586,7 @@ export function resolveMemoryDeepDreamingConfig(params: {
     ...resolved.phases.deep,
     enabled: resolved.enabled && resolved.phases.deep.enabled,
     ...(resolved.timezone ? { timezone: resolved.timezone } : {}),
+    humanReadable: resolved.humanReadable,
     verboseLogging: resolved.verboseLogging,
     storage: resolved.storage,
   };
@@ -583,6 +597,7 @@ export function resolveMemoryLightDreamingConfig(params: {
   cfg?: OpenClawConfig;
 }): MemoryLightDreamingConfig & {
   timezone?: string;
+  humanReadable: boolean;
   verboseLogging: boolean;
   storage: MemoryDreamingStorageConfig;
 } {
@@ -591,6 +606,7 @@ export function resolveMemoryLightDreamingConfig(params: {
     ...resolved.phases.light,
     enabled: resolved.enabled && resolved.phases.light.enabled,
     ...(resolved.timezone ? { timezone: resolved.timezone } : {}),
+    humanReadable: resolved.humanReadable,
     verboseLogging: resolved.verboseLogging,
     storage: resolved.storage,
   };
@@ -601,6 +617,7 @@ export function resolveMemoryRemDreamingConfig(params: {
   cfg?: OpenClawConfig;
 }): MemoryRemDreamingConfig & {
   timezone?: string;
+  humanReadable: boolean;
   verboseLogging: boolean;
   storage: MemoryDreamingStorageConfig;
 } {
@@ -609,6 +626,7 @@ export function resolveMemoryRemDreamingConfig(params: {
     ...resolved.phases.rem,
     enabled: resolved.enabled && resolved.phases.rem.enabled,
     ...(resolved.timezone ? { timezone: resolved.timezone } : {}),
+    humanReadable: resolved.humanReadable,
     verboseLogging: resolved.verboseLogging,
     storage: resolved.storage,
   };

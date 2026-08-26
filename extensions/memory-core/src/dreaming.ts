@@ -552,6 +552,9 @@ async function runShortTermDreamingPromotionIfTriggered(params: {
   let pendingNarratives = 0;
   const pluginConfig = params.cfg ? resolveMemoryDreamingPluginConfig(params.cfg) : undefined;
   const detachNarratives = params.trigger === "cron";
+  // Machine-only mode: retain every machine artifact and promotion, write no
+  // human-readable Dream Diary output. Undefined keeps the default-on surface.
+  const humanReadable = params.config.humanReadable !== false;
   const [
     { writeDeepDreamingReport },
     { appendFallbackNarrativeEntry, runDreamNarrative },
@@ -663,6 +666,7 @@ async function runShortTermDreamingPromotionIfTriggered(params: {
       }
       const deepHasContent = candidates.length > 0 || applied.applied > 0;
       await writeDeepDreamingReport({
+        humanReadable,
         workspaceDir,
         bodyLines: reportLines,
         hasContent: deepHasContent,
@@ -670,8 +674,10 @@ async function runShortTermDreamingPromotionIfTriggered(params: {
         timezone: params.config.timezone,
         storage: params.config.storage ?? { mode: "separate", separateReports: false },
       });
-      // Generate dream diary narrative from promoted memories.
-      if (candidates.length > 0 || applied.applied > 0) {
+      // Generate dream diary narrative from promoted memories. Machine-only mode
+      // keeps the ranking and promotion above and skips both diary writers: the
+      // narrative subagent and the fallback entry.
+      if (humanReadable && (candidates.length > 0 || applied.applied > 0)) {
         const data: NarrativePhaseData = {
           phase: "deep",
           snippets: candidates.map((c) => c.snippet).filter(Boolean),
