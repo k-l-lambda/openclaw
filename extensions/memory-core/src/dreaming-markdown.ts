@@ -76,6 +76,8 @@ type DreamingReportParams = {
   hasContent: boolean;
   nowMs?: number;
   timezone?: string;
+  /** False suppresses the DREAMS.md summary; the separate report still runs. */
+  humanReadable?: boolean;
   storage: MemoryDreamingStorageConfig;
 };
 
@@ -93,7 +95,9 @@ async function writeDreamingReport(
   let reportPath: string | undefined;
 
   if (params.phase === "deep") {
-    if (params.hasContent) {
+    // DREAMS.md is the human review surface; the separate report below is the
+    // machine artifact, so machine-only mode skips only this write.
+    if (params.hasContent && params.humanReadable !== false) {
       inlinePath = await updateDeepDreamsFile(params);
     }
   } else if (shouldWriteInline(params.storage)) {

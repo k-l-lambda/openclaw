@@ -140,6 +140,34 @@ describe("dreaming markdown storage", () => {
     ]);
   });
 
+  it("skips the DREAMS.md summary but keeps the deep report when humanReadable is false", async () => {
+    const workspaceDir = await createTempWorkspace("openclaw-dreaming-markdown-");
+
+    const reportPath = await writeDeepDreamingReport({
+      workspaceDir,
+      bodyLines: ["- Promoted: durable preference"],
+      hasContent: true,
+      humanReadable: false,
+      storage: {
+        mode: "separate",
+        separateReports: false,
+      },
+      nowMs: Date.parse("2026-04-05T10:00:00Z"),
+      timezone: "UTC",
+    });
+
+    // The machine artifact must survive machine-only mode unchanged.
+    expect(reportPath).toBeDefined();
+    const content = await fs.readFile(reportPath ?? "", "utf-8");
+    expect(content).toContain("# Deep Sleep");
+    expect(content).toContain("- Promoted: durable preference");
+
+    // The human review surface must not be created at all.
+    await expect(fs.access(path.join(workspaceDir, "DREAMS.md"))).rejects.toMatchObject({
+      code: "ENOENT",
+    });
+  });
+
   it("preserves read errors from an empty daily report", async () => {
     const workspaceDir = await createTempWorkspace("openclaw-dreaming-read-error-");
     const failure = Object.assign(new Error("daily file unavailable"), { code: "EACCES" });

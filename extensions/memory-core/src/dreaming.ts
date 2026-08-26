@@ -289,6 +289,7 @@ async function runShortTermDreamingPromotion(params: {
         );
         const deepHasContent = repair.changed || applied.applied > 0 || hasReportableRejections;
         await writeDeepDreamingReport({
+          humanReadable: params.config.humanReadable,
           workspaceDir,
           bodyLines: reportLines,
           hasContent: deepHasContent,
@@ -316,7 +317,9 @@ async function runShortTermDreamingPromotion(params: {
     // Light/REM material even when promotion/reporting failed, and publish only once.
     const firstNarrative = narratives[0];
     const lastNarrative = narratives.at(-1);
-    if (!firstNarrative || !lastNarrative) {
+    // Machine-only mode keeps phase artifacts, signals and promotion above and
+    // skips both diary writers: the narrative subagent and the fallback entry.
+    if (!firstNarrative || !lastNarrative || params.config.humanReadable === false) {
       continue;
     }
     const data: NarrativePhaseData = {

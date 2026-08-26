@@ -222,6 +222,13 @@ type MemoryDreamingConfig = {
   enabled: boolean;
   frequency: string;
   timezone?: string;
+  /**
+   * When false, dreaming keeps every machine artifact (phase reports, signal
+   * state, promotion into MEMORY.md) but writes no human-readable Dream Diary
+   * output: no narrative subagent, no fallback diary entry, no deep summary
+   * appended to DREAMS.md.
+   */
+  humanReadable: boolean;
   verboseLogging: boolean;
   storage: MemoryDreamingStorageConfig;
   execution: {
@@ -381,6 +388,9 @@ export function resolveMemoryDreamingConfig(params: {
     enabled: parseBoolean(dreaming?.enabled) ?? true,
     frequency,
     ...(timezone ? { timezone } : {}),
+    // Default true preserves the established Dream Diary review surface; opting
+    // out is for deployments that treat memory output as an automation artifact.
+    humanReadable: parseBoolean(dreaming?.humanReadable) ?? true,
     verboseLogging: parseBoolean(dreaming?.verboseLogging) ?? false,
     storage: {
       mode: normalizeChoice(storage?.mode, ["inline", "separate", "both"]) ?? "separate",
@@ -453,6 +463,7 @@ function resolveMemoryDreamingPhaseConfig<T extends MemoryDreamingPhaseName>(
     ...resolved.phases[phase],
     enabled: resolved.enabled && resolved.phases[phase].enabled,
     ...(resolved.timezone ? { timezone: resolved.timezone } : {}),
+    humanReadable: resolved.humanReadable,
     verboseLogging: resolved.verboseLogging,
     storage: resolved.storage,
   };

@@ -114,6 +114,9 @@
           "frequency": {
             "type": "string"
           },
+          "humanReadable": {
+            "type": "boolean"
+          },
           "model": {
             "type": "string"
           },
