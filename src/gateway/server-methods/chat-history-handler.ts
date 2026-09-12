@@ -42,7 +42,6 @@ import {
 } from "../session-request-agent.js";
 import { hiddenSessionNotFound } from "../session-sharing-policy.js";
 import { prepareSessionSharing, resolveSessionVisibility } from "../session-sharing.js";
-import { capArrayByJsonBytes } from "../session-transcript-readers.js";
 import {
   buildGatewaySessionInfo,
   getSessionDefaults,
@@ -57,11 +56,10 @@ import {
   createChatHistoryByteCounter,
   replaceOversizedChatHistoryMessages,
   reportOmittedChatHistory,
-  trimChatHistoryActivity,
 } from "./chat-history-budget.js";
 import { readChatHistoryDelta } from "./chat-history-delta.js";
+import { selectChatHistoryPageMessages } from "./chat-history-page-select.js";
 import {
-  capChatHistoryAroundMessage,
   enrichChatHistoryCompactionMarkers,
   readChatHistoryPage,
   resolveChatHistoryNextOffset,
@@ -367,30 +365,15 @@ async function handleChatHistoryRequest({
       getMaxChatHistoryMessagesBytes(),
     ),
   });
-  // Terminal imports have no older-page cursor. Anchored reads retain their
-  // existing neighborhood selector instead of changing which groups surround the anchor.
-  const prioritized =
-    historyPage.completeCliImport && !messageId
-      ? trimChatHistoryActivity({
-          messages: replaced.messages,
-          maxBytes: responseHistoryBytes,
-          byteCounter,
-        })
-      : replaced.messages;
-  // When rawContent is requested (Anthroid client), skip size-based truncation
-  // and return the full projected page as-is so the client can display complete
-  // conversation history.
-  const capped = rawContent
-    ? normalized
-    : messageId
-      ? capChatHistoryAroundMessage({
-          messages: prioritized,
-          messageId,
-          // A nonempty JSON array costs one framing byte plus each message and its separator.
-          maxCost: responseHistoryBytes - 1,
-          messageCost: (message) => byteCounter.messageBytes(message) + 1,
-        })
-      : capArrayByJsonBytes(prioritized, responseHistoryBytes, byteCounter.messageBytes).items;
+  const capped = selectChatHistoryPageMessages({
+    normalized,
+    replacedMessages: replaced.messages,
+    messageId,
+    rawContent,
+    completeCliImport: historyPage.completeCliImport,
+    responseHistoryBytes,
+    byteCounter,
+  });
   const historyBudgetPreserved =
     replaced.replacedCount === 0 &&
     capped.length === normalized.length &&

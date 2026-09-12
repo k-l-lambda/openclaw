@@ -178,6 +178,7 @@ describe("dreaming markdown storage", () => {
     const reportPath = await writeDeepDreamingReport({
       workspaceDir,
       bodyLines: ["- Promoted: durable preference"],
+      hasContent: true,
       humanReadable: false,
       storage: {
         mode: "separate",

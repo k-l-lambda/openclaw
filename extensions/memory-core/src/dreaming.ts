@@ -553,8 +553,9 @@ async function runShortTermDreamingPromotionIfTriggered(params: {
   const pluginConfig = params.cfg ? resolveMemoryDreamingPluginConfig(params.cfg) : undefined;
   const detachNarratives = params.trigger === "cron";
   // Machine-only mode: retain every machine artifact and promotion, write no
-  // human-readable Dream Diary output. Undefined keeps the default-on surface.
-  const humanReadable = params.config.humanReadable !== false;
+  // human-readable Dream Diary output. The deep resolver already applied the
+  // default-on fallback, so this is a plain boolean.
+  const humanReadable = params.config.humanReadable;
   const [
     { writeDeepDreamingReport },
     { appendFallbackNarrativeEntry, runDreamNarrative },

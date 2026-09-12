@@ -404,6 +404,7 @@ describe("recoverEmbeddedRunAttempt", () => {
         authProfileStore: { version: 1, profiles: {} },
         runtimeAuthRetry: false,
         maybeRefreshRuntimeAuthForAuthError: vi.fn(async () => false),
+        maybeRotateApiKeyForAuthError: vi.fn(async () => false),
         failover,
         emptyErrorRetries: 0,
         overloadProfileRotations: 0,

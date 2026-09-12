@@ -734,7 +734,15 @@ export function createEmbeddedRunAuthController(params: {
   };
 
   const maybeRotateApiKeyForAuthError = createApiKeyRotationHook({
-    ...params,
+    config: params.config,
+    authStorage: params.authStorage,
+    log: params.log,
+    // Read live state per call: the runtime model and resolved credentials are
+    // replaced as auth profiles advance, so a captured snapshot would rotate
+    // against a stale provider.
+    getProvider: () => params.provider,
+    getRuntimeModel: () => state.models.runtime,
+    getApiKeyInfo: () => state.apiKeyInfo,
     classifyAuthError: (text, provider) => classifyFailoverReason(text, { provider }) === "auth",
   });
 

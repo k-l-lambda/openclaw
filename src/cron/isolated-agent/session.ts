@@ -286,13 +286,6 @@ export function resolveCronSession(params: {
       deliveryContext: undefined,
     }),
   };
-  if (isNewSession) {
-    // Clear stale sessionFile so the runner creates a fresh transcript file for
-    // the new sessionId instead of appending to the old accumulated one. Delete
-    // the key rather than assigning undefined: callers assert its absence, and a
-    // present-but-undefined key still serializes into the session store.
-    delete sessionEntry.sessionFile;
-  }
   if (resetBoundaryPending) {
     clearAllCliSessions(sessionEntry);
     sessionEntry.agentHarnessId = undefined;

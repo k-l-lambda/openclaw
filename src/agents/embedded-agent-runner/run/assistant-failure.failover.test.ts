@@ -69,6 +69,7 @@ function makeInput(
     authProfileStore: { version: 1, profiles: {} },
     runtimeAuthRetry: false,
     maybeRefreshRuntimeAuthForAuthError: vi.fn(async () => false),
+    maybeRotateApiKeyForAuthError: vi.fn(async () => false),
     failover: {
       resolveAuthProfileFailureReason: vi.fn(() => null),
       maybeMarkAuthProfileFailure: vi.fn(async () => {}),

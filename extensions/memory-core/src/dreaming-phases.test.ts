@@ -628,9 +628,8 @@ describe("memory-core dreaming phases", () => {
       nowMs: Date.parse("2026-04-05T10:05:00.000Z"),
     });
 
-    // No diary model call, and no session created that would need cleanup.
-    expect(subagent.run).not.toHaveBeenCalled();
-    expect(subagent.deleteSession).not.toHaveBeenCalled();
+    // The narrative subagent is the only diary writer, so no call means no diary.
+    expect(subagent.complete).not.toHaveBeenCalled();
 
     // The machine artifacts of the phase must still be produced.
     const dailyNote = await fs.readFile(
