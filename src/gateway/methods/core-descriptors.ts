@@ -1,4 +1,5 @@
 import type { CoreGatewayMethodSpecRow } from "./core-descriptor-types.js";
+import { FORK_METHOD_SPECS } from "./core-descriptors.fork.js";
 import { cronListShareKey, modelsListShareKey, operatorReadShareKey } from "./read-share-keys.js";
 
 // Canonical append-only method table; derived lookup and dispatch policy lives in core-method-policy.ts.
@@ -362,9 +363,7 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   // Params-aware: ordinary turns need write; /new and /reset mutate lifecycle state as admin.
   ["agent", "agent", "dynamic", "<=2026.7", { startup: true }],
   ["agent.identity.get", "agent-identity", "operator.read", "<=2026.7"],
-  ["agent.getProfile", "agent", "operator.read", "<=2026.7"],
-  ["agent.getMemoryPatch", "agent", "operator.read", "<=2026.7"],
-  ["agent.applyMemoryPatch", "agent", "operator.write", "<=2026.7"],
+  ...FORK_METHOD_SPECS.agentMemory,
   ["agent.wait", "agent", "operator.write", "<=2026.7", { startup: true, lifetime: "observation" }],
   ["chat.history", "chat", "operator.read", "<=2026.7", { startup: true }],
   ["chat.startup", "chat", "operator.read", "<=2026.7", { startup: true }],
@@ -383,7 +382,7 @@ export const CORE_GATEWAY_METHOD_SPECS = [
   ["chat.message.get", "chat", "operator.read", "<=2026.7", { startup: true }],
   ["chat.abort", "chat-abort", "operator.write", "<=2026.7"],
   ["chat.send", "chat-send", "operator.write", "<=2026.7", { startup: true }],
-  ["notification.push", "notification", "operator.write", "<=2026.7"],
+  ...FORK_METHOD_SPECS.notification,
   // Operator terminal: admin-only PTY surface. Appended to the advertised block
   // so existing advertised method indices stay stable for older clients.
   ["terminal.open", "terminal", "operator.admin", "2026.7"],
@@ -419,8 +418,7 @@ export const CORE_GATEWAY_METHOD_SPECS = [
         "Deprecated alias for chat.send queueMode interrupt; removal per protocol deprecation policy.",
     },
   ],
-  ["session.drainPending", "session-drain", "operator.write", "<=2026.7"],
-  ["session.drainAllPending", "session-drain", "operator.write", "<=2026.7"],
+  ...FORK_METHOD_SPECS.sessionDrain,
   ["push.test", "push", "operator.write", "<=2026.7", { advertise: false }],
   ["attach.grant", "attach", "operator.admin", "<=2026.7", CONTROL_PLANE_WRITE],
   ["attach.revoke", "attach", "operator.admin", "<=2026.7"],
