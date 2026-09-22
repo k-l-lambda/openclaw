@@ -57,6 +57,10 @@ const EVENT_SCOPE_GUARDS: Record<string, string[]> = {
   "exec.approval.resolved": [APPROVALS_SCOPE],
   "question.requested": [QUESTIONS_SCOPE],
   "question.resolved": [QUESTIONS_SCOPE],
+  // Fork: notification.push is an operator.write method (core-descriptors.fork.ts).
+  // Without an entry here the default `if (!required) return false` drops the
+  // broadcast for every client, so the method succeeded while delivering nothing.
+  "notification.push": [WRITE_SCOPE],
   heartbeat: [],
   "plugin.approval.requested": [APPROVALS_SCOPE],
   "plugin.approval.resolved": [APPROVALS_SCOPE],
