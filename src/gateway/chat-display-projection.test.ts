@@ -102,6 +102,13 @@ describe("transcript display metadata", () => {
     },
   );
 
+  it("keeps long text whole when no display cap is requested", () => {
+    const text = "x".repeat(9_000);
+    expect(projectChatDisplayMessages([{ role: "assistant", content: text, timestamp: 1 }])).toEqual(
+      [{ role: "assistant", content: text, timestamp: 1 }],
+    );
+  });
+
   it.each([
     { changed: true, diff: "+line\n".repeat(40) },
     { cwd: "/workspace/".repeat(40), diff: "+short" },

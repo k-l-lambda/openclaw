@@ -9,6 +9,7 @@ import type { AgentHistoryActivity } from "../../infra/agent-activity-events.js"
 import { jsonUtf8Bytes, jsonUtf8BytesOrInfinity } from "../../infra/json-utf8-bytes.js";
 import { logLargePayload } from "../../logging/diagnostic-payload.js";
 import type { InFlightRunSnapshot } from "../chat-inflight-snapshot.js";
+import { truncateChatHistoryText } from "../chat-display-projection.helpers.js";
 import { readChatHistoryMessageId } from "../session-history-tail.js";
 
 export const CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES = 128 * 1024;
@@ -139,6 +140,65 @@ export function buildOversizedHistoryPlaceholder(message?: unknown): Record<stri
   };
 }
 
+const OVERSIZED_TEXT_FALLBACK_START_CHARS = 64_000;
+const OVERSIZED_TEXT_FALLBACK_MIN_CHARS = 2_000;
+
+/** Truncate the text-bearing fields of one message until it fits, or null. */
+function shrinkOversizedHistoryText(
+  message: unknown,
+  maxSingleMessageBytes: number,
+): Record<string, unknown> | null {
+  const record = asOptionalRecord(message);
+  if (!record) {
+    return null;
+  }
+  const truncateFields = (value: Record<string, unknown>, maxChars: number) => {
+    let truncated = false;
+    for (const field of ["text", "content", "thinking"]) {
+      const current = value[field];
+      if (typeof current === "string") {
+        const res = truncateChatHistoryText(current, maxChars);
+        value[field] = res.text;
+        truncated ||= res.truncated;
+      }
+    }
+    return truncated;
+  };
+  for (
+    let maxChars = OVERSIZED_TEXT_FALLBACK_START_CHARS;
+    maxChars >= OVERSIZED_TEXT_FALLBACK_MIN_CHARS;
+    maxChars = Math.floor(maxChars / 2)
+  ) {
+    const copy: Record<string, unknown> = { ...record };
+    let truncated = truncateFields(copy, maxChars);
+    if (Array.isArray(record.content)) {
+      copy.content = record.content.map((block) => {
+        const blockRecord = asOptionalRecord(block);
+        if (!blockRecord) {
+          return block;
+        }
+        const blockCopy = { ...blockRecord };
+        truncated = truncateFields(blockCopy, maxChars) || truncated;
+        return blockCopy;
+      });
+    }
+    if (!truncated) {
+      // Text is shorter than this budget; a smaller one may still cut it.
+      continue;
+    }
+    const meta = asOptionalRecord(record["__openclaw"]) ?? {};
+    copy["__openclaw"] = {
+      ...meta,
+      truncated: true,
+      reason: typeof meta.reason === "string" ? meta.reason : "oversized",
+    };
+    if (jsonUtf8Bytes(copy) <= maxSingleMessageBytes) {
+      return copy;
+    }
+  }
+  return null;
+}
+
 export function replaceOversizedChatHistoryMessages(params: {
   byteCounter?: ReturnType<typeof createChatHistoryByteCounter>;
   messages: unknown[];
@@ -152,6 +212,12 @@ export function replaceOversizedChatHistoryMessages(params: {
       return message;
     }
     replacedCount += 1;
+    // With no default display char cap, long text reaches this guard. Prefer a
+    // truncated copy of the text over dropping the whole message.
+    const shrunk = shrinkOversizedHistoryText(message, maxSingleMessageBytes);
+    if (shrunk) {
+      return shrunk;
+    }
     const placeholder = buildOversizedHistoryPlaceholder(message);
     return byteCounter.messageBytes(placeholder) <= maxSingleMessageBytes
       ? placeholder

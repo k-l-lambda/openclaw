@@ -14,7 +14,12 @@ export type RoleContentMessage = {
   content?: unknown;
 };
 
-export const DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS = 8_000;
+// No default per-block text cap for display projections (was 8_000). Long
+// assistant replies and injected reports must render whole in the Control UI.
+// The per-message byte guard (CHAT_HISTORY_MAX_SINGLE_MESSAGE_BYTES) and the
+// page byte budget still bound payloads; callers wanting a cap pass maxChars.
+// A finite sentinel, not Infinity, so snapshots that echo it stay JSON-safe.
+export const DEFAULT_CHAT_HISTORY_TEXT_MAX_CHARS = Number.MAX_SAFE_INTEGER;
 
 /** Removes private yield inputs from a display copy without changing the source argument objects. */
 export function stripPrivateToolCallContextForDisplay(entry: Record<string, unknown>): boolean {

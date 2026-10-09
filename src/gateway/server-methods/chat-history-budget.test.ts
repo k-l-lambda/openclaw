@@ -34,6 +34,42 @@ describe("replaceOversizedChatHistoryMessages", () => {
     expect(result.messages).toEqual([]);
   });
 
+  it("truncates oversized text instead of dropping the whole message", () => {
+    const transcriptPosition = { source: "snapshot", rawSeq: 3 };
+    const big = {
+      role: "assistant",
+      timestamp: 1,
+      // ~150 KB of CJK text: over the 128 KB guard, readable once truncated.
+      content: [{ type: "text", text: "预".repeat(50_000) }],
+      __openclaw: { id: "big", seq: 2, transcriptPosition },
+    };
+    const result = replaceOversizedChatHistoryMessages({
+      messages: [big],
+      maxSingleMessageBytes: 128 * 1024,
+    });
+    const text = firstText(result.messages);
+    expect(result.replacedCount).toBe(1);
+    expect(text).not.toContain("chat.history omitted");
+    expect(text.startsWith("预".repeat(1_000))).toBe(true);
+    expect(text).toContain("...(truncated)...");
+    expect(Buffer.byteLength(JSON.stringify(result.messages[0]))).toBeLessThanOrEqual(128 * 1024);
+    expect(result.messages[0]).toMatchObject({
+      __openclaw: { id: "big", seq: 2, transcriptPosition, truncated: true, reason: "oversized" },
+    });
+    // The source message is not mutated.
+    expect(big.content[0]?.text).toHaveLength(50_000);
+  });
+
+  it("truncates a string-content oversized message", () => {
+    const result = replaceOversizedChatHistoryMessages({
+      messages: [{ role: "assistant", timestamp: 1, content: "z".repeat(200_000) }],
+      maxSingleMessageBytes: 128 * 1024,
+    });
+    const content = (result.messages[0] as { content: string }).content;
+    expect(content.startsWith("z".repeat(10_000))).toBe(true);
+    expect(content).toContain("...(truncated)...");
+  });
+
   it("replaces an oversized message and preserves its cursor and run metadata", () => {
     const transcriptPosition = { source: "snapshot", rawSeq: 9 };
     const last = {

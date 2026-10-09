@@ -1649,7 +1649,7 @@ describe("session.message websocket events", () => {
     });
   });
 
-  test("marks display-cap truncation structurally on live session.message events", async () => {
+  test("delivers long text whole on live session.message events (no default display cap)", async () => {
     const storePath = await createMainSessionStore();
     const transcriptMessage = {
       role: "assistant",
@@ -1669,12 +1669,12 @@ describe("session.message websocket events", () => {
         message: transcriptMessage,
         messageId: "msg-capped",
       });
-      const payload = requireRecord(messageEvent.payload, "capped message payload");
-      const message = requireRecord(payload.message, "capped message");
-      // The preview is bounded by the display cap and says so structurally, so a
-      // non-UI consumer can fetch the full row instead of sniffing the sentinel.
-      expect(JSON.stringify(message.content)).toContain("...(truncated)...");
-      expect(message["__openclaw"]).toMatchObject({ truncated: true, reason: "display-cap" });
+      const payload = requireRecord(messageEvent.payload, "long message payload");
+      const message = requireRecord(payload.message, "long message");
+      // No default char cap: the whole reply reaches the UI; only the per-message
+      // byte guard can still shorten it.
+      expect(JSON.stringify(message.content)).not.toContain("...(truncated)...");
+      expect(JSON.stringify(message.content)).toContain("x".repeat(9_000));
     });
   });
 
