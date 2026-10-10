@@ -319,7 +319,7 @@ async function runShortTermDreamingPromotion(params: {
     const lastNarrative = narratives.at(-1);
     // Machine-only mode keeps phase artifacts, signals and promotion above and
     // skips both diary writers: the narrative subagent and the fallback entry.
-    if (!firstNarrative || !lastNarrative || params.config.humanReadable === false) {
+    if (!firstNarrative || !lastNarrative || !params.config.humanReadable) {
       continue;
     }
     const data: NarrativePhaseData = {

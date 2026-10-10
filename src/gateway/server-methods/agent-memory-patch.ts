@@ -23,7 +23,7 @@ export const agentGetMemoryPatchHandler: GatewayRequestHandlers["agent.getMemory
 }) => {
   const p = params as Record<string, unknown>;
   const cfg = context.getRuntimeConfig();
-  const identity = resolveAssistantIdentity({
+  const identity = await resolveAssistantIdentity({
     cfg,
     agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined,
   });
@@ -108,7 +108,7 @@ export const agentApplyMemoryPatchHandler: GatewayRequestHandlers["agent.applyMe
   async ({ params, respond, context }) => {
     const p = params as Record<string, unknown>;
     const cfg = context.getRuntimeConfig();
-    const identity = resolveAssistantIdentity({
+    const identity = await resolveAssistantIdentity({
       cfg,
       agentId: typeof p.agentId === "string" ? normalizeAgentId(p.agentId) : undefined,
     });

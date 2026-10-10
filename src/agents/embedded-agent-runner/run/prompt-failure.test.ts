@@ -22,7 +22,11 @@ type FixtureOptions = Partial<
     Pick<Params["runtime"], "pluginHarnessOwnsTransport" | "thinkLevel"> &
     Pick<
       Params["preparedRuntime"],
-      "provider" | "modelId" | "maybeRefreshRuntimeAuthForAuthError" | "attemptedThinking"
+      | "provider"
+      | "modelId"
+      | "maybeRefreshRuntimeAuthForAuthError"
+      | "maybeRotateApiKeyForAuthError"
+      | "attemptedThinking"
     > &
     Pick<Params["runInput"], "fallbackConfigured"> &
     Pick<Params["normalizedAttempt"], "activeErrorContext">
@@ -66,6 +70,8 @@ function makeParams(overrides: FixtureOptions = {}): Params {
       attemptAuthProfileStore: { version: 1, profiles: {} },
       maybeRefreshRuntimeAuthForAuthError:
         overrides.maybeRefreshRuntimeAuthForAuthError ?? vi.fn(async () => false),
+      maybeRotateApiKeyForAuthError:
+        overrides.maybeRotateApiKeyForAuthError ?? vi.fn(async () => false),
       attemptedThinking: overrides.attemptedThinking ?? new Set(),
     },
     runtime: {

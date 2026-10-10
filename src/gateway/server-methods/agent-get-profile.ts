@@ -6,7 +6,6 @@
 // structure (sibling of agent-identity.ts) during the 0724 upstream rebase.
 import fs from "node:fs/promises";
 import path from "node:path";
-
 import { normalizeOptionalString } from "@openclaw/normalization-core/string-coerce";
 import {
   ErrorCodes,
@@ -14,13 +13,10 @@ import {
   formatValidationErrors,
   validateAgentGetProfileParams,
 } from "../../../packages/gateway-protocol/src/index.js";
+import { resolveAgentConfig, resolveAgentWorkspaceDir } from "../../agents/agent-scope.js";
 import { resolveAgentIdFromSessionKey } from "../../config/sessions.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { resolveAssistantIdentity } from "../assistant-identity.js";
-import {
-  resolveAgentConfig,
-  resolveAgentWorkspaceDir,
-} from "../../agents/agent-scope.js";
 import type { GatewayRequestHandlers } from "./types.js";
 
 export const agentGetProfileHandler: GatewayRequestHandlers["agent.getProfile"] = async ({
@@ -49,7 +45,7 @@ export const agentGetProfileHandler: GatewayRequestHandlers["agent.getProfile"] 
     agentId = resolved;
   }
   const cfg = context.getRuntimeConfig();
-  const identity = resolveAssistantIdentity({ cfg, agentId });
+  const identity = await resolveAssistantIdentity({ cfg, agentId });
   const resolvedAgentId = identity.agentId;
   const agentConfig = resolveAgentConfig(cfg, resolvedAgentId);
 
