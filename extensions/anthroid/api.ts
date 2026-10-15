@@ -9,6 +9,20 @@ import type { ChannelPlugin } from "openclaw/plugin-sdk/core";
 
 type AnthroidAccount = { enabled: true };
 
+// An explicit `user:`/`channel:` target names the Anthroid conversation the
+// sender asked for. The gateway `send` RPC derives a generic agent session
+// (e.g. `agent:main:main`) for such targets, which would fold every CLI send
+// into the main chat. Cron announces pass a display title as `to` and rely on
+// their run session key, so only addressable targets override the session.
+const EXPLICIT_TARGET = /^(user|channel):\S/;
+
+function resolveQueueKey(to: string, sessionKey: string | undefined): string {
+  if (EXPLICIT_TARGET.test(to)) {
+    return to;
+  }
+  return sessionKey ?? to;
+}
+
 export const anthroidPlugin: ChannelPlugin<AnthroidAccount> = {
   id: "anthroid",
   meta: {
@@ -38,7 +52,7 @@ export const anthroidPlugin: ChannelPlugin<AnthroidAccount> = {
       return { ok: true, to };
     },
     async sendText(ctx) {
-      const sessionKey = ctx.session?.key ?? ctx.to;
+      const sessionKey = resolveQueueKey(ctx.to, ctx.session?.key);
       const messageId = crypto.randomUUID();
       enqueuePending(sessionKey, {
         content: ctx.text,

@@ -8,6 +8,8 @@ describe("anthroid outbound", () => {
   beforeEach(() => {
     drainPending("agent:main:cron:job-1");
     drainPending("fallback-target");
+    drainPending("user:openclaw-test");
+    drainPending("agent:main:main");
   });
 
   it("queues by session key and preserves the notification title", async () => {
@@ -46,6 +48,24 @@ describe("anthroid outbound", () => {
         sessionKey: "fallback-target",
         source: "notification",
       }),
+    ]);
+  });
+
+  it("keys an explicit user: target by the target, not the derived agent session", async () => {
+    if (!sendText) {
+      throw new Error("anthroid sendText is not configured");
+    }
+
+    await sendText({
+      cfg: {},
+      to: "user:openclaw-test",
+      text: "via gateway send",
+      session: { key: "agent:main:main" },
+    });
+
+    expect(drainPending("agent:main:main")).toEqual([]);
+    expect(drainPending("user:openclaw-test")).toEqual([
+      expect.objectContaining({ content: "via gateway send", sessionKey: "user:openclaw-test" }),
     ]);
   });
 });

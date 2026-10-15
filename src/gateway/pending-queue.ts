@@ -5,7 +5,8 @@
  * and drained by the client via `session.drainPending` on
  * reconnect or periodic poll.
  *
- * Best-effort, single-instance only. Drain is destructive (no ack).
+ * Best-effort, single-instance only. Drain is destructive (no ack); use
+ * peekPending() to inspect the queue without consuming it.
  */
 
 export interface PendingMessage {
@@ -65,6 +66,17 @@ export function drainPending(key: string): PendingMessage[] {
   // Filter expired on read for deterministic TTL behavior
   const now = Date.now();
   return queue.filter((m) => now - m.enqueuedAt < TTL_MS);
+}
+
+/**
+ * Non-destructive read: returns unexpired messages for `key`, or for every key
+ * when `key` is omitted. Lets an operator verify a send reached the queue
+ * without stealing it from the Anthroid client.
+ */
+export function peekPending(key?: string): PendingMessage[] {
+  const now = Date.now();
+  const source = key === undefined ? [...queues.values()].flat() : (queues.get(key) ?? []);
+  return source.filter((m) => now - m.enqueuedAt < TTL_MS);
 }
 
 export function drainAll(): PendingMessage[] {

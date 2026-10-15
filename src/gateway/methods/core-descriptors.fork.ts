@@ -15,5 +15,6 @@ export const FORK_METHOD_SPECS = {
   sessionDrain: [
     ["session.drainPending", "session-drain", "operator.write", "<=2026.7"],
     ["session.drainAllPending", "session-drain", "operator.write", "<=2026.7"],
+    ["session.peekPending", "session-drain", "operator.read", "<=2026.7"],
   ],
 } as const;
