@@ -68,4 +68,21 @@ describe("anthroid outbound", () => {
       expect.objectContaining({ content: "via gateway send", sessionKey: "user:openclaw-test" }),
     ]);
   });
+
+  it("routes an explicit target to the session the app opens for it", async () => {
+    const resolve = anthroidPlugin.messaging?.resolveOutboundSessionRoute;
+    if (!resolve) {
+      throw new Error("anthroid resolveOutboundSessionRoute is not configured");
+    }
+
+    const route = await resolve({ cfg: {}, agentId: "main", target: "user:openclaw-test" });
+    expect(route).toEqual(
+      expect.objectContaining({
+        sessionKey: "agent:main:user:openclaw-test",
+        baseSessionKey: "agent:main:user:openclaw-test",
+        to: "user:openclaw-test",
+      }),
+    );
+    expect(await resolve({ cfg: {}, agentId: "main", target: "Gold Monitor" })).toBeNull();
+  });
 });

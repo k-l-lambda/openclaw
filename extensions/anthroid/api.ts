@@ -6,6 +6,7 @@
 import crypto from "node:crypto";
 import { enqueuePending } from "openclaw/plugin-sdk/channel-outbound";
 import type { ChannelPlugin } from "openclaw/plugin-sdk/core";
+import { normalizeAgentId } from "openclaw/plugin-sdk/routing";
 
 type AnthroidAccount = { enabled: true };
 
@@ -38,6 +39,28 @@ export const anthroidPlugin: ChannelPlugin<AnthroidAccount> = {
   config: {
     listAccountIds: () => ["default"],
     resolveAccount: () => ({ enabled: true }),
+  },
+  messaging: {
+    // The app opens a `user:x` conversation as session `agent:<id>:user:x`
+    // (chat.send canonicalizes the bare key). Route the outbound mirror there
+    // too, so the queued message and the user's reply share one transcript
+    // instead of the mirror landing in `agent:<id>:main`. Other targets
+    // (cron display titles) keep the core fallback.
+    resolveOutboundSessionRoute: ({ agentId, target }) => {
+      const to = target.trim();
+      if (!EXPLICIT_TARGET.test(to)) {
+        return null;
+      }
+      const sessionKey = `agent:${normalizeAgentId(agentId)}:${to}`;
+      return {
+        sessionKey,
+        baseSessionKey: sessionKey,
+        peer: { kind: "direct", id: to },
+        chatType: "direct",
+        from: "anthroid:default",
+        to,
+      };
+    },
   },
   outbound: {
     // "gateway": out-of-process callers (CLI `message send`, MCP) route through the
