@@ -26,7 +26,11 @@ export const anthroidPlugin: ChannelPlugin<AnthroidAccount> = {
     resolveAccount: () => ({ enabled: true }),
   },
   outbound: {
-    deliveryMode: "direct",
+    // "gateway": out-of-process callers (CLI `message send`, MCP) route through the
+    // gateway `send` RPC, so enqueuePending() runs in the gateway process that owns
+    // the in-memory pending queue. "direct" enqueued into the caller's own process,
+    // and the message vanished when the CLI exited.
+    deliveryMode: "gateway",
     resolveTarget({ to }) {
       if (!to) {
         return { ok: false, error: new Error("missing target session key") };
